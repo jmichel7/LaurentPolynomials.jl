@@ -1,0 +1,12 @@
+name = "LaurentPolynomials"
+uuid = "10b2801c-d482-41ed-a506-4a825c59e3da"
+authors = ["Jean Michel <jean.michel@imj-prg.fr>"]
+version = "0.0.1"
+[compat]
+julia = "1"
+
+[extras]
+Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
+
+[targets]
+test = ["Test"]
