@@ -4,13 +4,13 @@ Depth=3
 ```
 
 ```@docs
-Pols
+LaurentPolynomials
 Pol
 @Pol
 divrem
 gcd(::Pol,::Pol)
 gcdx(::Pol,::Pol)
-Pols.pseudodiv
+pseudodiv
 srgcd
 powermod
 randpol
