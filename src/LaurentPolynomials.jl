@@ -17,7 +17,7 @@ Julia. The reasons for still having my own package are multiple:
     have  one (because `T` does not  contain the necessary information). An
     example is modular arithmetic with a `BigInt` modulus which thus cannot
     be part of the type.
-  - a final justification is that `Pols` is used by `Mvps`.
+  - a final justification is that `LaurentPolynomials` is used by `Mvps`.
 
 Laurent polynomials have the parametric type `Pol{T}`, where `T`is the type
 of   the  coefficients.  They  are  constructed   by  giving  a  vector  of
@@ -170,7 +170,7 @@ julia> divrem(q^3+1,2q+1) # changes coefficients to field elements
 julia> divrem(q^3+1,2q+1//1) # case of coeffcients already field elements
 ((1//2)q²+(-1//4)q+1//8, 7//8)
 
-julia> Pols.pseudodiv(q^3+1,2q+1) # pseudo-division keeps the ring
+julia> pseudodiv(q^3+1,2q+1) # pseudo-division keeps the ring
 (4q²-2q+1, 7)
 
 julia> (4q^2-2q+1)*(2q+1)+7 # but multiplying back gives a multiple of the polynomial
@@ -234,7 +234,7 @@ Rational fractions are also scalars for broadcasting and can be sorted
 module LaurentPolynomials
 export degree, valuation, Pol, derivative, shift, positive_part, negative_part,
        bar, derivative, srgcd, Frac, @Pol, scalar, coefficients, exactdiv, root,
-       randpol
+       randpol, pseudodiv
 
 const varname=Ref(:x)
 

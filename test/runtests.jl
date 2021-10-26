@@ -47,7 +47,7 @@ end
 @test mytest("README.md","Pol([1,2,3],[2.0,1.0,3.0])","Pol{Float64}: 1.5q²-5.5q+6.0")
 @test mytest("README.md","divrem(q^3+1,2q+1)","(0.5q²-0.25q+0.125, 0.875)")
 @test mytest("README.md","divrem(q^3+1,2q+1//1)","((1//2)q²+(-1//4)q+1//8, 7//8)")
-@test mytest("README.md","Pols.pseudodiv(q^3+1,2q+1)","(4q²-2q+1, 7)")
+@test mytest("README.md","pseudodiv(q^3+1,2q+1)","(4q²-2q+1, 7)")
 @test mytest("README.md","(4q^2-2q+1)*(2q+1)+7","Pol{Int64}: 8q³+8")
 @test mytest("README.md","exactdiv(q+1,2)","nothing")
 @test mytest("README.md","exactdiv(q+1,2.0)","Pol{Float64}: 0.5q+0.5")
