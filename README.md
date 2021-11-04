@@ -24,7 +24,7 @@ The  initial motivation was to have a simple way to port GAP polynomials to Juli
   * I need my polynomials to behave  well when coefficients are in a ring, in which case I use pseudo-division and subresultant gcd.
   * For my uses my polynomials are several times faster than those in the package `Polynomials`.
   * I need my polynomials to  work as well as possible with coefficients of types  `T` where elements have a `zero`  method but `T` itself does not have  one (because `T` does not  contain the necessary information). An example is modular arithmetic with a `BigInt` modulus which thus cannot be part of the type.
-  * a final justification is that `LaurentPolynomials` is used by `Mvps`.
+  * a final justification is that `LaurentPolynomials` is used by `PuiseuxPolynomials`.
 
 Laurent polynomials have the parametric type `Pol{T}`, where `T`is the type of   the  coefficients.  They  are  constructed   by  giving  a  vector  of coefficients  of  type  `T`,  and  a  valuation  (an  `Int`).  We call true polynomials those whose valuation is `≥0`.
 
@@ -146,7 +146,7 @@ Pol{Float64}: 1.5q²-5.5q+6.0
 
 Polynomials  are scalars  for broadcasting.  They can  be sorted (they have `cmp`   and  `isless`  functions  which   compare  the  valuation  and  the coefficients), they can be keys in a `Dict` (they have a `hash` function).
 
-The  functions  `divrem`,  `div`,  `%`,  `gcd`,  `gcdx`,  `lcm`, `powermod` operate  between  true  polynomials  over  a  field,  using  the polynomial division.  Over a ring it is better  to use `pseudodiv` and `srgcd` instead of  `divrem`  and  `gcd`  (by  default  `gcd`  between  integer polynomials delegates to `srgcd`.
+The  functions  `divrem`,  `div`,  `%`,  `gcd`,  `gcdx`,  `lcm`, `powermod` operate  between  true  polynomials  over  a  field,  using  the polynomial division.  Over a ring it is better  to use `pseudodiv` and `srgcd` instead of  `divrem`  and  `gcd`  (by  default  `gcd`  between  integer polynomials delegates to `srgcd`).
 
 `exactdiv`  does  division  (over  a  field  or  a  ring) when it is exact, otherwise gives an error.
 
@@ -169,7 +169,7 @@ Pol{Float64}: 0.5q+0.5
 
 Finally,   `Pol`s  have   methods  `conj`,   `adjoint`  which   operate  on coefficients,  methods `positive_part`,  `negative_part` and  `bar` (useful for  Kazhdan-Lusztig  theory)  and  a  method  `randpol`  to produce random polynomials.
 
-Inverting polynomials is a way to get a rational fraction  `Frac{Pol{T}}`s. Rational fractions are normalized so that the numerator and denominator are true  polynomials prime to each other.  They have the arithmetic operations `+`,  `-` ,  `*`, `/`,  `//`, `^`,  `inv`, `one`, `isone`, `zero`, `iszero` (which can operate between a `Pol` or a `Number` and a `Frac{Pol{T}}`).
+Inverting polynomials is a way to get a rational fraction  `Frac{Pol{T}}`. Rational fractions are normalized so that the numerator and denominator are true  polynomials prime to each other.  They have the arithmetic operations `+`,  `-` ,  `*`, `/`,  `//`, `^`,  `inv`, `one`, `isone`, `zero`, `iszero` (which can operate between a `Pol` or a `Number` and a `Frac{Pol{T}}`).
 
 ```julia-repl
 julia> a=1/(q+1)

@@ -17,7 +17,7 @@ Julia. The reasons for still having my own package are multiple:
     have  one (because `T` does not  contain the necessary information). An
     example is modular arithmetic with a `BigInt` modulus which thus cannot
     be part of the type.
-  - a final justification is that `LaurentPolynomials` is used by `Mvps`.
+  - a final justification is that `LaurentPolynomials` is used by `PuiseuxPolynomials`.
 
 Laurent polynomials have the parametric type `Pol{T}`, where `T`is the type
 of   the  coefficients.  They  are  constructed   by  giving  a  vector  of
@@ -158,7 +158,7 @@ The  functions  `divrem`,  `div`,  `%`,  `gcd`,  `gcdx`,  `lcm`, `powermod`
 operate  between  true  polynomials  over  a  field,  using  the polynomial
 division.  Over a ring it is better  to use `pseudodiv` and `srgcd` instead
 of  `divrem`  and  `gcd`  (by  default  `gcd`  between  integer polynomials
-delegates to `srgcd`.
+delegates to `srgcd`).
 
 `exactdiv`  does  division  (over  a  field  or  a  ring) when it is exact,
 otherwise gives an error.
@@ -185,7 +185,7 @@ coefficients,  methods `positive_part`,  `negative_part` and  `bar` (useful
 for  Kazhdan-Lusztig  theory)  and  a  method  `randpol`  to produce random
 polynomials.
 
-Inverting polynomials is a way to get a rational fraction  `Frac{Pol{T}}`s.
+Inverting polynomials is a way to get a rational fraction  `Frac{Pol{T}}`.
 Rational fractions are normalized so that the numerator and denominator are
 true  polynomials prime to each other.  They have the arithmetic operations
 `+`,  `-` ,  `*`, `/`,  `//`, `^`,  `inv`, `one`, `isone`, `zero`, `iszero`
@@ -378,7 +378,10 @@ function Base.show(io::IO, ::MIME"text/html", a::Pol)
 end
 
 function Base.show(io::IO, ::MIME"text/plain", a::Pol)
-  if !haskey(io,:typeinfo) print(io,typeof(a),": ") end
+  if !haskey(io,:typeinfo) 
+    print(io,typeof(a),": ")
+    io=IOContext(io,:typeinfo=>typeof(a))
+  end
   show(io,a)
 end
 
