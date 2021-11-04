@@ -148,7 +148,7 @@ Polynomials  are scalars  for broadcasting.  They can  be sorted (they have `cmp
 
 The  functions  `divrem`,  `div`,  `%`,  `gcd`,  `gcdx`,  `lcm`, `powermod` operate  between  true  polynomials  over  a  field,  using  the polynomial division.  Over a ring it is better  to use `pseudodiv` and `srgcd` instead of  `divrem`  and  `gcd`  (by  default  `gcd`  between  integer polynomials delegates to `srgcd`.
 
-`exactdiv`  does the division  (over a field  or a ring)  when it is exact, otherwise returns `nothing`.
+`exactdiv`  does  division  (over  a  field  or  a  ring) when it is exact, otherwise gives an error.
 
 ```julia-repl
 julia> divrem(q^3+1,2q+1) # changes coefficients to field elements
@@ -163,9 +163,7 @@ julia> pseudodiv(q^3+1,2q+1) # pseudo-division keeps the ring
 julia> (4q^2-2q+1)*(2q+1)+7 # but multiplying back gives a multiple of the polynomial
 Pol{Int64}: 8q³+8
 
-julia> exactdiv(q+1,2) # nothing (in the integers)
-
-julia> exactdiv(q+1,2.0) # but OK in the reals
+julia> exactdiv(q+1,2.0) # exactdiv(q+1,2) would give an error
 Pol{Float64}: 0.5q+0.5
 ```
 

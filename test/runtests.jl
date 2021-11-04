@@ -49,7 +49,6 @@ end
 @test mytest("README.md","divrem(q^3+1,2q+1//1)","((1//2)q²+(-1//4)q+1//8, 7//8)")
 @test mytest("README.md","pseudodiv(q^3+1,2q+1)","(4q²-2q+1, 7)")
 @test mytest("README.md","(4q^2-2q+1)*(2q+1)+7","Pol{Int64}: 8q³+8")
-@test mytest("README.md","exactdiv(q+1,2)","nothing")
 @test mytest("README.md","exactdiv(q+1,2.0)","Pol{Float64}: 0.5q+0.5")
 @test mytest("README.md","a=1/(q+1)","Frac{Pol{Int64}}: 1/(q+1)")
 @test mytest("README.md","Pol(2/a)","Pol{Int64}: 2q+2")
