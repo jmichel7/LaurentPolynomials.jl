@@ -167,7 +167,7 @@ otherwise gives an error.
 julia> divrem(q^3+1,2q+1) # changes coefficients to field elements
 (0.5q²-0.25q+0.125, 0.875)
 
-julia> divrem(q^3+1,2q+1//1) # case of coeffcients already field elements
+julia> divrem(q^3+1,2q+1//1) # case of coefficients already field elements
 ((1//2)q²+(-1//4)q+1//8, 7//8)
 
 julia> pseudodiv(q^3+1,2q+1) # pseudo-division keeps the ring
@@ -553,18 +553,17 @@ function exactdiv(a::Pol,b::Pol)
   d=a.v-b.v
   if !iszero(a.v) a=shift(a,-a.v) end
   if !iszero(b.v) b=shift(b,-b.v) end
-  if degree(b)>degree(a) return nothing end
+  if degree(b)>degree(a) error(b," does not exactly divide ",a) end
   z=zero(a.c[1]+b.c[1])
   r=fill(z,1+degree(a))
   view(r,a.v+1:length(r)).=a.c
   q=fill(z,length(r)-degree(b))
   for i in length(r):-1:degree(b)+1
     c=exactdiv(r[i],b.c[end])
-    if isnothing(c) return nothing end
     view(r,i-length(b.c)+1:i) .-= c .* b.c
     q[i-length(b.c)+1]=c
   end
-  if !iszero(r) return nothing end
+  if !iszero(r) error(b," does not exactly divide ",a) end
   res=Pol(q,d)
 end
 
@@ -639,8 +638,7 @@ Base.lcm(m::AbstractArray{<:Pol})=reduce(lcm,m)
 
 Base.div(a::Pol, b::Pol)=divrem(a,b)[1]
 Base.:%(a::Pol, b::Pol)=divrem(a,b)[2]
-Base.:%(a::Pol{<:Integer}, b::Pol{<:Integer})=isone(b[end]) ?
-                                      pseudodiv(a,b)[2] : divrem(a,b)[2]
+Base.:%(a::Pol{<:Integer}, b::Pol{<:Integer})=divrem(a,b)[2]
 
 """
 `gcd(p::Pol,  q::Pol)` computes the  `gcd` of the  polynomials. It uses the
