@@ -364,10 +364,11 @@ Base.zero(::Type{Pol{T}}) where T=Pol_(T[],0)
 Base.zero(::Type{Pol})=zero(Pol{Int})
 Base.zero(a::Pol{T}) where T=Pol_(T[],0)
 Base.iszero(a::Pol)=isempty(a.c)
-# next 3 stuff to make inv using LU work (abs is stupid)
+# next 4 stuff to make transpose and inv using LU work (abs is stupid)
 Base.conj(p::Pol{T}) where T=Pol_(conj.(p.c),p.v)
 Base.abs(p::Pol)=p
 Base.adjoint(a::Pol)=conj(a)
+Base.transpose(a::Pol)=a
 
 ismonomial(p::Pol)=length(p.c)==1
 
