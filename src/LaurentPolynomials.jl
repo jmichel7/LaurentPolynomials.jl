@@ -877,7 +877,7 @@ function Frac(a::T,b::T;prime=false)::Frac{T} where T<:Pol
   elseif iszero(b) error("division by 0")
   end
   a,b=make_positive(a,b)
-  if !(prime || ismonomial(b) || ismonomial(a))
+  f !prime
     d=gcd(a,b)
     a,b=exactdiv(a,d),exactdiv(b,d)
   end
@@ -901,18 +901,32 @@ end
 Base.convert(::Type{Pol{T}},p::Frac) where {T}=convert(Pol{T},Pol(p))
 
 function Base.convert(::Type{Frac{T}},p::Pol) where T
-  Frac(convert(T,p),one(T);prime=true)
+  f=Frac(convert(T,p),one(T);prime=true)
+  Frac_(convert(T,f.num),convert(T,f.den))
+end
+
+function Base.convert(::Type{Frac{Pol{T}}},p::Pol{Rational{T1}}) where{T,T1}
+  T2=Pol{promote_type(T,T1)}
+  Frac_(convert(T2,numerator(p)),convert(T2,denominator(p)))
 end
 
 function Base.convert(::Type{Frac{T}},p::Number) where {T<:Pol}
   Frac_(convert(T,p),convert(T,1))
 end
 
-function Base.promote_rule(a::Type{T1},b::Type{Frac{T2}})where {T1<:Pol,T2<:Pol}
-  Frac{promote_type(T1,T2)}
+function Base.promote_rule(a::Type{Pol{T1}},b::Type{Frac{Pol{T2}}})where {T1,T2}
+  Frac{Pol{promote_type(T1,T2)}}
+end
+
+function Base.promote_rule(a::Type{Pol{Rational{T1}}},b::Type{Frac{Pol{T2}}})where {T1,T2}
+  Frac{Pol{promote_type(T1,T2)}}
 end
 
 function Base.promote_rule(a::Type{T1},b::Type{Frac{T2}})where {T1<:Number,T2<:Pol}
+  Frac{promote_type(T1,T2)}
+end
+
+function Base.promote_rule(a::Type{Frac{T1}},b::Type{Frac{T2}})where {T1<:Pol,T2<:Pol}
   Frac{promote_type(T1,T2)}
 end
 
