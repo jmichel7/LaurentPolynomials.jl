@@ -533,6 +533,7 @@ function Base.divrem(a::Pol, b::Pol)
   if iszero(b) throw(DivideError) end
   if degree(b)>degree(a) return (zero(a),a) end
   if a.v<0 || b.v<0 error("arguments should be true polynomials") end
+  a,b=promote(a,b)
   d=inv(b.c[end])
   z=zero(a.c[1]+b.c[1]+d)
   r=fill(z,1+degree(a))
@@ -695,15 +696,15 @@ end
 """
 `powermod(p::Pol, x::Integer, q::Pol)` computes ``p^x \\pmod m``.
 ```julia-repl
-julia> powermod(q-1,3,q^2+q+1)
-Pol{Int64}: 6q+3
+julia> powermod(q-1//1,3,q^2+q+1)
+Pol{Rational{Int64}}: (6//1)q+3//1
 ```
 """
 function Base.powermod(p::Pol, x::Integer, q::Pol)
   x==0 && return one(q)
   b=p%q
   t=prevpow(2, x)
-  r=one(q)
+  r=one(p)
   while true
     if x>=t
      r=(r*b)%q
@@ -877,7 +878,7 @@ function Frac(a::T,b::T;prime=false)::Frac{T} where T<:Pol
   elseif iszero(b) error("division by 0")
   end
   a,b=make_positive(a,b)
-  f !prime
+  if !prime
     d=gcd(a,b)
     a,b=exactdiv(a,d),exactdiv(b,d)
   end

@@ -63,7 +63,7 @@ end
 @test mytest("LaurentPolynomials.jl","gcd(2q+2,q^2-1)","Pol{Int64}: q+1")
 @test mytest("LaurentPolynomials.jl","gcd(q+1//1,q^2-1//1)","Pol{Rational{Int64}}: (1//1)q+1//1")
 @test mytest("LaurentPolynomials.jl","gcdx(q^3-1//1,q^2-1//1)","((1//1)q-1//1, 1//1, (-1//1)q)")
-@test mytest("LaurentPolynomials.jl","powermod(q-1,3,q^2+q+1)","Pol{Int64}: 6q+3")
+@test mytest("LaurentPolynomials.jl","powermod(q-1//1,3,q^2+q+1)","Pol{Rational{Int64}}: (6//1)q+3//1")
 @test mytest("LaurentPolynomials.jl","p=Pol([1,1,1])","Pol{Int64}: q²+q+1")
 @test mytest("LaurentPolynomials.jl","vals=p.(1:5)","5-element Vector{Int64}:\n  3\n  7\n 13\n 21\n 31")
 @test mytest("LaurentPolynomials.jl","Pol(1:5,vals*1//1)","Pol{Rational{Int64}}: (1//1)q²+(1//1)q+1//1")
