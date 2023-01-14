@@ -342,7 +342,10 @@ Base.hash(a::Pol, h::UInt)=hash(a.v,hash(a.c,h))
 
 (p::Pol{T})(x) where T=iszero(p) ? zero(T) : evalpoly(x,p.c)*x^p.v
 
-# efficient p↦ qˢ p
+"""
+`shift(p::Pol,s)`
+efficient way to multiply a polynomial by `Pol()^s`.
+"""
 shift(p::Pol{T},s) where T=Pol_(p.c,p.v+s)
 
 positive_part(p::Pol)=p.v>=0 ? copy(p) : Pol(view(p.c,1-p.v:length(p.c)),0)
