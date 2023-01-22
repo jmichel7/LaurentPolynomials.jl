@@ -1,5 +1,5 @@
 """
-This  package,  which  depends  on  no other package, implements univariate
+This  package, which depends only on `LinearAlgebra`, implements univariate
 Laurent  polynomials  (type  `Pol{T}`),  and  univariate rational fractions
 (type `Frac{Pol{T}}`).
 
@@ -160,8 +160,8 @@ division.  Over a ring it is better  to use `pseudodiv` and `srgcd` instead
 of  `divrem`  and  `gcd`  (by  default  `gcd`  between  integer polynomials
 delegates to `srgcd`).
 
-`exactdiv`  does  division  (over  a  field  or  a  ring) when it is exact,
-otherwise gives an error.
+`LinearAlgebra.exactdiv`  does division (over a field or a ring) when it is
+exact, otherwise gives an error.
 
 ```julia-repl
 julia> divrem(q^3+1,2q+1) # changes coefficients to field elements
@@ -176,10 +176,9 @@ julia> pseudodiv(q^3+1,2q+1) # pseudo-division keeps the ring
 julia> (4q^2-2q+1)*(2q+1)+7 # but multiplying back gives a multiple of the polynomial
 Pol{Int64}: 8q³+8
 
-julia> exactdiv(q+1,2.0) # exactdiv(q+1,2) would give an error
+julia> LinearAlgebra.exactdiv(q+1,2.0) # LinearAlgebra.exactdiv(q+1,2) would give an error
 Pol{Float64}: 0.5q+0.5
 ```
-
 Finally,   `Pol`s  have   methods  `conj`,   `adjoint`  which   operate  on
 coefficients,  methods `positive_part`,  `negative_part` and  `bar` (useful
 for  Kazhdan-Lusztig  theory)  and  a  method  `randpol`  to produce random
@@ -231,9 +230,10 @@ Rational fractions are also scalars for broadcasting and can be sorted
 """
 module LaurentPolynomials
 export degree, valuation, Pol, derivative, shift, positive_part, negative_part,
-       bar, derivative, srgcd, Frac, @Pol, scalar, coefficients, exactdiv, root,
-       randpol, pseudodiv
+       bar, derivative, srgcd, Frac, @Pol, scalar, coefficients, root, randpol,
+       pseudodiv
 
+using LinearAlgebra:LinearAlgebra, exactdiv
 const varname=Ref(:x)
 
 struct Pol{T}
@@ -506,19 +506,19 @@ Base.:-(b::Number, a::Pol)=Pol(b)-a
 Base.:-(a::Pol,b::Number)=a-Pol(b)
 Base.div(a::Pol,b::Number)=Pol(div.(a.c,b),a.v;copy=false)
 
-exactdiv(a,b)=a/b  # generic version for fields
-function exactdiv(a::Integer,b::Integer) # define for integral domains
-  (d,r)=divrem(a,b)
-  if !iszero(r) error(b," does not exactly divide ",a) end
-  d
-end
+# compared to LinearAlgebra.exactdiv this function gives an error if not exact
+#function exactdiv(a::Integer,b::Integer) 
+#  (d,r)=divrem(a,b)
+#  if !iszero(r) error(b," does not exactly divide ",a) end
+#  d
+#end
 
 function coeffexactdiv(a::Pol,b)
   if isone(b) return a end
   c=exactdiv.(a.c,b)
   Pol_(c,a.v)
 end
-exactdiv(a::Pol,b::Number)=coeffexactdiv(a,b)
+LinearAlgebra.exactdiv(a::Pol,b::Number)=coeffexactdiv(a,b)
 
 Base.:/(p::Pol,q::Number)=Pol_(p.c./q,p.v)
 Base.://(p::Pol,q::Number)=Pol_(p.c.//q,p.v)
@@ -552,7 +552,7 @@ function Base.divrem(a::Pol, b::Pol)
   Pol(q),Pol(r)
 end
 
-function exactdiv(a::Pol,b::Pol)
+function LinearAlgebra.exactdiv(a::Pol,b::Pol)
   if isone(b) || iszero(a) return a end
   if iszero(b) throw(DivideError) end
   d=a.v-b.v
