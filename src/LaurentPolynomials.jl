@@ -771,6 +771,7 @@ end
 
 Base.denominator(p::Pol)=iszero(p) ? 1 : lcm(denominator.(p.c))
 Base.numerator(p::Pol{<:Rational{T}}) where T=convert(Pol{T},p*denominator(p))
+Base.numerator(p::Pol{<:Integer})=p
 
 function root(x::Pol,n::Union{Integer,Rational{<:Integer}}=2)
   n=Int(n)
