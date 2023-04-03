@@ -1,5 +1,5 @@
 """
-This  package,  which  depends  on  no other package, implements univariate
+This  package, which depends only on `LinearAlgebra`, implements univariate
 Laurent  polynomials  (type  `Pol{T}`),  and  univariate rational fractions
 (type `Frac{Pol{T}}`).
 
@@ -160,8 +160,8 @@ division.  Over a ring it is better  to use `pseudodiv` and `srgcd` instead
 of  `divrem`  and  `gcd`  (by  default  `gcd`  between  integer polynomials
 delegates to `srgcd`).
 
-`exactdiv`  does  division  (over  a  field  or  a  ring) when it is exact,
-otherwise gives an error.
+`LinearAlgebra.exactdiv`  does division (over a field or a ring) when it is
+exact, otherwise gives an error.
 
 ```julia-repl
 julia> divrem(q^3+1,2q+1) # changes coefficients to field elements
@@ -176,10 +176,9 @@ julia> pseudodiv(q^3+1,2q+1) # pseudo-division keeps the ring
 julia> (4q^2-2q+1)*(2q+1)+7 # but multiplying back gives a multiple of the polynomial
 Pol{Int64}: 8q³+8
 
-julia> exactdiv(q+1,2.0) # exactdiv(q+1,2) would give an error
+julia> LinearAlgebra.exactdiv(q+1,2.0) # LinearAlgebra.exactdiv(q+1,2) would give an error
 Pol{Float64}: 0.5q+0.5
 ```
-
 Finally,   `Pol`s  have   methods  `conj`,   `adjoint`  which   operate  on
 coefficients,  methods `positive_part`,  `negative_part` and  `bar` (useful
 for  Kazhdan-Lusztig  theory)  and  a  method  `randpol`  to produce random
@@ -231,9 +230,10 @@ Rational fractions are also scalars for broadcasting and can be sorted
 """
 module LaurentPolynomials
 export degree, valuation, Pol, derivative, shift, positive_part, negative_part,
-       bar, derivative, srgcd, Frac, @Pol, scalar, coefficients, exactdiv, root,
-       randpol, pseudodiv
+       bar, derivative, srgcd, Frac, @Pol, scalar, coefficients, root, randpol,
+       pseudodiv
 
+using LinearAlgebra:LinearAlgebra, exactdiv
 const varname=Ref(:x)
 
 struct Pol{T}
@@ -342,7 +342,10 @@ Base.hash(a::Pol, h::UInt)=hash(a.v,hash(a.c,h))
 
 (p::Pol{T})(x) where T=iszero(p) ? zero(T) : evalpoly(x,p.c)*x^p.v
 
-# efficient p↦ qˢ p
+"""
+`shift(p::Pol,s)`
+efficient way to multiply a polynomial by `Pol()^s`.
+"""
 shift(p::Pol{T},s) where T=Pol_(p.c,p.v+s)
 
 positive_part(p::Pol)=p.v>=0 ? copy(p) : Pol(view(p.c,1-p.v:length(p.c)),0)
@@ -353,8 +356,10 @@ negative_part(p::Pol)=degree(p)<=0 ? copy(p) : Pol(view(p.c,1:1-p.v),p.v)
 bar(p::Pol)=Pol_(reverse(p.c),-degree(p))
 
 Base.:(==)(a::Pol, b::Pol)= a.c==b.c && a.v==b.v
-Base.:(==)(a::Pol,b)= (iszero(a) && iszero(b))||(b!==nothing && scalar(a)==b)
-Base.:(==)(b,a::Pol)= a==b
+Base.:(==)(a::Pol{T},b::Union{Number,T}) where T=
+    (iszero(a) && iszero(b))||(b!==nothing && scalar(a)==b)
+Base.:(==)(b::Union{Number,T},a::Pol{T}) where T=
+    (iszero(a) && iszero(b))||(b!==nothing && scalar(a)==b)
 
 Base.one(a::Pol{T}) where T=Pol_([iszero(a) ? one(T) : one(a.c[1])],0)
 Base.one(::Type{Pol{T}}) where T=Pol_([one(T)],0)
@@ -503,19 +508,19 @@ Base.:-(b::Number, a::Pol)=Pol(b)-a
 Base.:-(a::Pol,b::Number)=a-Pol(b)
 Base.div(a::Pol,b::Number)=Pol(div.(a.c,b),a.v;copy=false)
 
-exactdiv(a,b)=a/b  # generic version for fields
-function exactdiv(a::Integer,b::Integer) # define for integral domains
-  (d,r)=divrem(a,b)
-  if !iszero(r) error(b," does not exactly divide ",a) end
-  d
-end
+# compared to LinearAlgebra.exactdiv this function gives an error if not exact
+#function exactdiv(a::Integer,b::Integer) 
+#  (d,r)=divrem(a,b)
+#  if !iszero(r) error(b," does not exactly divide ",a) end
+#  d
+#end
 
 function coeffexactdiv(a::Pol,b)
   if isone(b) return a end
   c=exactdiv.(a.c,b)
   Pol_(c,a.v)
 end
-exactdiv(a::Pol,b::Number)=coeffexactdiv(a,b)
+LinearAlgebra.exactdiv(a::Pol,b::Number)=coeffexactdiv(a,b)
 
 Base.:/(p::Pol,q::Number)=Pol_(p.c./q,p.v)
 Base.://(p::Pol,q::Number)=Pol_(p.c.//q,p.v)
@@ -533,6 +538,7 @@ function Base.divrem(a::Pol, b::Pol)
   if iszero(b) throw(DivideError) end
   if degree(b)>degree(a) return (zero(a),a) end
   if a.v<0 || b.v<0 error("arguments should be true polynomials") end
+  a,b=promote(a,b)
   d=inv(b.c[end])
   z=zero(a.c[1]+b.c[1]+d)
   r=fill(z,1+degree(a))
@@ -548,7 +554,7 @@ function Base.divrem(a::Pol, b::Pol)
   Pol(q),Pol(r)
 end
 
-function exactdiv(a::Pol,b::Pol)
+function LinearAlgebra.exactdiv(a::Pol,b::Pol)
   if isone(b) || iszero(a) return a end
   if iszero(b) throw(DivideError) end
   d=a.v-b.v
@@ -695,15 +701,15 @@ end
 """
 `powermod(p::Pol, x::Integer, q::Pol)` computes ``p^x \\pmod m``.
 ```julia-repl
-julia> powermod(q-1,3,q^2+q+1)
-Pol{Int64}: 6q+3
+julia> powermod(q-1//1,3,q^2+q+1)
+Pol{Rational{Int64}}: (6//1)q+3//1
 ```
 """
 function Base.powermod(p::Pol, x::Integer, q::Pol)
   x==0 && return one(q)
   b=p%q
   t=prevpow(2, x)
-  r=one(q)
+  r=one(p)
   while true
     if x>=t
      r=(r*b)%q
@@ -877,7 +883,7 @@ function Frac(a::T,b::T;prime=false)::Frac{T} where T<:Pol
   elseif iszero(b) error("division by 0")
   end
   a,b=make_positive(a,b)
-  if !(prime || ismonomial(b) || ismonomial(a))
+  if !prime
     d=gcd(a,b)
     a,b=exactdiv(a,d),exactdiv(b,d)
   end
@@ -901,18 +907,32 @@ end
 Base.convert(::Type{Pol{T}},p::Frac) where {T}=convert(Pol{T},Pol(p))
 
 function Base.convert(::Type{Frac{T}},p::Pol) where T
-  Frac(convert(T,p),one(T);prime=true)
+  f=Frac(convert(T,p),one(T);prime=true)
+  Frac_(convert(T,f.num),convert(T,f.den))
+end
+
+function Base.convert(::Type{Frac{Pol{T}}},p::Pol{Rational{T1}}) where{T,T1}
+  T2=Pol{promote_type(T,T1)}
+  Frac_(convert(T2,numerator(p)),convert(T2,denominator(p)))
 end
 
 function Base.convert(::Type{Frac{T}},p::Number) where {T<:Pol}
   Frac_(convert(T,p),convert(T,1))
 end
 
-function Base.promote_rule(a::Type{T1},b::Type{Frac{T2}})where {T1<:Pol,T2<:Pol}
-  Frac{promote_type(T1,T2)}
+function Base.promote_rule(a::Type{Pol{T1}},b::Type{Frac{Pol{T2}}})where {T1,T2}
+  Frac{Pol{promote_type(T1,T2)}}
+end
+
+function Base.promote_rule(a::Type{Pol{Rational{T1}}},b::Type{Frac{Pol{T2}}})where {T1,T2}
+  Frac{Pol{promote_type(T1,T2)}}
 end
 
 function Base.promote_rule(a::Type{T1},b::Type{Frac{T2}})where {T1<:Number,T2<:Pol}
+  Frac{promote_type(T1,T2)}
+end
+
+function Base.promote_rule(a::Type{Frac{T1}},b::Type{Frac{T2}})where {T1<:Pol,T2<:Pol}
   Frac{promote_type(T1,T2)}
 end
 
