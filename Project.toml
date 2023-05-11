@@ -2,6 +2,10 @@ name = "LaurentPolynomials"
 uuid = "10b2801c-d482-41ed-a506-4a825c59e3da"
 authors = ["Jean Michel <jean.michel@imj-prg.fr>"]
 version = "0.0.7"
+
+[deps]
+LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
+
 [compat]
 julia = "1"
 
@@ -10,6 +14,3 @@ Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 
 [targets]
 test = ["Test"]
-
-[deps]
-LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"

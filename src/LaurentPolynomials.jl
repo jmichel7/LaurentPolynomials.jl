@@ -356,8 +356,10 @@ negative_part(p::Pol)=degree(p)<=0 ? copy(p) : Pol(view(p.c,1:1-p.v),p.v)
 bar(p::Pol)=Pol_(reverse(p.c),-degree(p))
 
 Base.:(==)(a::Pol, b::Pol)= a.c==b.c && a.v==b.v
-Base.:(==)(a::Pol,b)= (iszero(a) && iszero(b))||(b!==nothing && scalar(a)==b)
-Base.:(==)(b,a::Pol)= a==b
+Base.:(==)(a::Pol{T},b::Union{Number,T}) where T=
+    (iszero(a) && iszero(b))||(b!==nothing && scalar(a)==b)
+Base.:(==)(b::Union{Number,T},a::Pol{T}) where T=
+    (iszero(a) && iszero(b))||(b!==nothing && scalar(a)==b)
 
 Base.one(a::Pol{T}) where T=Pol_([iszero(a) ? one(T) : one(a.c[1])],0)
 Base.one(::Type{Pol{T}}) where T=Pol_([one(T)],0)
@@ -612,25 +614,30 @@ sub-resultant gcd: gcd of polynomials over a unique factorization domain
 See Knuth AOCP2 4.6.1 Algorithm C
 """
 function srgcd(a::Pol,b::Pol)
-  if degree(b)>degree(a) a,b=b,a end
   if iszero(b) return a end
+  if iszero(a) return b end
+  v=min(valuation(a),valuation(b))
+  a=shift(a,-valuation(a))
+  b=shift(b,-valuation(b))
+  if degree(b)>degree(a) return shift(srgcd(b,a),v) end
   ca=gcd(a.c);a=coeffexactdiv(a,ca)
   cb=gcd(b.c);b=coeffexactdiv(b,cb)
   d=gcd(ca,cb)
-  g=1
-  h=1
+  g=one(eltype(a.c))
+  h=one(eltype(a.c))
   while true
     δ=degree(a)-degree(b)
     q,r=pseudodiv(a,b)
     if iszero(r)
       cb=gcd(b.c);b=coeffexactdiv(b,cb)
-      return isone(d) ? b : Pol_(b.c .*d,b.v)
+      return isone(d) ? shift(b,v) : Pol_(b.c .*d,b.v+v)
     elseif degree(r)==0
-      return Pol_([d],0)
+      return Pol_([d],v)
     end
     a=b
     gh=g*h^δ
     b=coeffexactdiv(r,gh)
+    b=shift(b,-valuation(b))
     g=a[end]
     if δ>0 h=exactdiv(g^δ,h^(δ-1)) end
   end
@@ -771,7 +778,6 @@ end
 
 Base.denominator(p::Pol)=iszero(p) ? 1 : lcm(denominator.(p.c))
 Base.numerator(p::Pol{<:Rational{T}}) where T=convert(Pol{T},p*denominator(p))
-Base.numerator(p::Pol{<:Integer})=p
 
 function root(x::Pol,n::Union{Integer,Rational{<:Integer}}=2)
   n=Int(n)
@@ -798,7 +804,8 @@ function Base.convert(::Type{Frac{T}},p::Frac{T1}) where {T,T1}
   Frac_(convert(T,p.num),convert(T,p.den))
 end
 
-(::Type{Frac{T}})(a::Frac{T}) where T=a
+(::Type{Frac{T}})(a::Frac) where {T}=convert(Frac{T},a)
+(::Type{Pol{T}})(a::Frac) where {T}=convert(Pol{T},a)
 (::Type{Frac{T}})(a::Number) where T=convert(Frac{T},a)
 
 Base.broadcastable(p::Frac)=Ref(p)
