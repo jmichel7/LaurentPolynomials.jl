@@ -422,9 +422,9 @@ function stringexp(io::IO,n::Integer)
   end
 end
 
-function Base.show(io::IO,p::Pol)
+function Base.show(io::IO,p::Pol{T})where T
   if !get(io,:limit,false) && !get(io,:TeX,false)
-    if ismonomial(p) && isone(p.c[1]) && p.v==1 print(io,"Pol()")
+    if ismonomial(p) && isone(p.c[1]) && p.v==1 && T==Int print(io,"Pol()")
     else print(io,"Pol(",p.c)
       if !iszero(p.v) print(io,",",p.v) end
       print(io,")")
@@ -799,6 +799,7 @@ end
 
 Base.numerator(a::Frac)=a.num
 Base.denominator(a::Frac)=a.den
+Base.isfinite(x::Frac)=true
 
 function Base.convert(::Type{Frac{T}},p::Frac{T1}) where {T,T1}
   Frac_(convert(T,p.num),convert(T,p.den))
