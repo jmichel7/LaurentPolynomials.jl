@@ -851,25 +851,24 @@ end
 
 Base.inv(a::Frac)=Frac_(a.den,a.num)
 
-Base.:*(a::Frac,b::Frac)=Frac(a.num*b.num,a.den*b.den)
-Base.://(a::Frac,b::Frac)=Frac(a.num*b.den,a.den*b.num)
-Base.:/(a::Frac,b::Frac)=a//b
-
 Base.:^(a::Frac, n::Integer)= n>=0 ? Base.power_by_squaring(a,n) :
                               Base.power_by_squaring(inv(a),-n)
 Base.:+(a::Frac,b::Frac)=Frac(a.num*b.den+a.den*b.num,a.den*b.den)
-Base.:-(a::Frac)=Frac_(-a.num,a.den)
-Base.:-(a::Frac,b::Frac)=Frac(a.num*b.den-a.den*b.num,a.den*b.den)
 Base.:+(a::Frac{<:T},b::Union{Number,T}) where T=+(promote(a,b)...)
 Base.:+(b::Union{Number,T},a::Frac{<:T}) where T=+(promote(a,b)...)
+Base.:-(a::Frac)=Frac_(-a.num,a.den)
+Base.:-(a::Frac,b::Frac)=Frac(a.num*b.den-a.den*b.num,a.den*b.den)
 Base.:-(a::Frac{<:T},b::Union{Number,T}) where T=-(promote(a,b)...)
 Base.:-(b::Union{Number,T},a::Frac{<:T}) where T=-(promote(b,a)...)
+Base.:*(a::Frac,b::Frac)=Frac(a.num*b.num,a.den*b.den)
 Base.:*(a::Frac{<:T},b::T) where T=Frac(a.num*b,a.den)
 Base.:*(b::T,a::Frac{<:T}) where T=Frac(a.num*b,a.den)
+Base.:*(a::Frac{<:Pol},b::Number)=Frac(a.num*b,a.den;prime=true)
+Base.:*(b::Number,a::Frac{<:Pol})=a*b
 
 #----------------------------------------------------------------------
 
-# make both pols, one of valuation 0
+# make both non-Laurent pols, one of valuation 0
 function make_positive(a::Pol,b::Pol)
   v=a.v-b.v
   shift(a,max(v,0)-a.v),shift(b,-min(v,0)-b.v)
@@ -898,10 +897,6 @@ function Frac(a::T,b::T;prime=false)::Frac{T} where T<:Pol
   Frac_(a,b)
 end
 
-function Frac(a::Pol{<:Rational},b::Pol{<:Rational};k...)
-  Frac(numerator(a)*denominator(b),numerator(b)*denominator(a);k...)
-end
-
 function Pol(p::Frac{<:Pol})
   if ismonomial(p.den)==1
     if isone(p.den.c[1]^2) return Pol(p.num.c .*p.den.c[1],p.num.v-p.den.v)
@@ -918,6 +913,12 @@ function Base.convert(::Type{Frac{T}},p::Pol) where T
   Frac_(convert(T,f.num),convert(T,f.den))
 end
 
+function Base.convert(::Type{Frac{Pol{T}}},a::Frac{<:Pol{<:Rational{T}}}) where T<:Integer
+  n=numerator(a)
+  d=denominator(a)
+  Frac(numerator(n)*denominator(d),numerator(d)*denominator(n))
+end
+  
 function Base.convert(::Type{Frac{Pol{T}}},p::Pol{Rational{T1}}) where{T,T1}
   T2=Pol{promote_type(T,T1)}
   Frac_(convert(T2,numerator(p)),convert(T2,denominator(p)))
@@ -948,11 +949,6 @@ function Frac(a::Pol)
   Frac(a,one(a);prime=true)
 end
 
-function Base.://(a::Pol,b::Pol)
-  if ismonomial(b) return Pol(a.c.//b.c[1],a.v-b.v) end
-  Frac(a,b)
-end
-
 bestinv(x)=isone(x) ? x : isone(-x) ? x : inv(x)
 
 function Base.inv(p::Pol)
@@ -960,18 +956,26 @@ function Base.inv(p::Pol)
   Frac_(make_positive(one(p),p)...)
 end
 
-Base.:/(p::Pol,q::Pol)=p*inv(q)
+
+function Base.:/(a::Pol,b::Pol)
+  if ismonomial(b) return Pol_(a.c*bestinv(b.c[1]),a.v-b.v) end
+  Frac(a,b)
+end
+Base.:/(a::Frac,b::Frac)=a//b
+Base.:/(p::Number,q::Pol)=p*inv(q)
+Base.:/(a::Union{Number,Pol},b::Frac{<:Pol})=a//b
+Base.:/(a::Frac{<:Pol},b::Union{Number,Pol})=a//b
 
 Base.://(a::Frac{<:Pol},b::Pol)=Frac(a.num,a.den*b)
 Base.://(a::Frac{<:Pol},b::Number)=Frac(a.num,a.den*b;prime=true)
-Base.:/(a::Frac{<:Pol},b::Union{Number,Pol})=a//b
 Base.://(a::Union{Number,Pol},b::Frac{<:Pol})=a*inv(b)
-Base.:/(a::Union{Number,Pol},b::Frac{<:Pol})=a//b
 Base.://(p::Number,q::Pol)=Frac(Pol(p),q;prime=true)
-Base.:/(p::Number,q::Pol)=p*inv(q)
+Base.://(a::Frac,b::Frac)=Frac(a.num*b.den,a.den*b.num)
 
-Base.:*(a::Frac{<:Pol},b::Number)=Frac(a.num*b,a.den;prime=true)
-Base.:*(b::Number,a::Frac{<:Pol})=a*b
+function Base.://(a::Pol,b::Pol)
+  if ismonomial(b) return Pol(a.c.//b.c[1],a.v-b.v) end
+  Frac(a,b)
+end
 
 (p::Frac{<:Pol})(x;Rational=false)=Rational ? p.num(x)//p.den(x) : p.num(x)/p.den(x)
 # @btime inv(Frac.([q+1 q+2;q-2 q-3])) setup=(q=Pol())
