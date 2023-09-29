@@ -1,23 +1,29 @@
 """
-This  package, which depends only on `LinearAlgebra`, implements univariate
-Laurent  polynomials  (type  `Pol{T}`),  and  univariate rational fractions
-(type `Frac{Pol{T}}`).
+This  package  implements  univariate  Laurent  polynomials, and univariate
+rational fractions.
 
 The  initial motivation was to have a simple way to port GAP polynomials to
 Julia. The reasons for still having my own package are multiple:
 
-  - I need  to have  a simple  and flexible  interface, which  I hope this
-    provides.
-  - I need my polynomials to behave  well when coefficients are in a ring,
-    in which case I use pseudo-division and subresultant gcd.
-  - For my uses my polynomials are several times faster than those in the
-    package `Polynomials`.
+  - I  need  my  polynomials  to  behave  well  when coefficients are in a
+    (possible  non-commutative) ring,  in which  case I use pseudo-division
+    and subresultant gcd.
   - I need my polynomials to  work as well as possible with coefficients of
     types  `T` where elements have a `zero`  method but `T` itself does not
-    have  one (because `T` does not  contain the necessary information). An
+    have  one, because `T`  does not contain  the necessary information. An
     example is modular arithmetic with a `BigInt` modulus which thus cannot
-    be part of the type.
-  - a final justification is that `LaurentPolynomials` is used by `PuiseuxPolynomials`.
+    be  part of the type.  For this reason the  `zero` polynomials does not
+    have  an empty list of coefficients,  but a list containing one element
+    equal  to zero, so it is  always possible to get a  zero of type T from
+    the zero polynomial.
+  - `LaurentPolynomials` is designed to be used by `PuiseuxPolynomials`.
+  - I need  to have  a simple  and flexible  interface, which  I hope this
+    provides.
+  - In many cases, my polynomials are several times faster than those in
+    the package `Polynomials`.
+
+The  only package on which this package depends is `LinearAlgebra`, through
+the use of the function `exactdiv`.
 
 Laurent polynomials have the parametric type `Pol{T}`, where `T`is the type
 of   the  coefficients.  They  are  constructed   by  giving  a  vector  of
@@ -184,12 +190,12 @@ coefficients,  methods `positive_part`,  `negative_part` and  `bar` (useful
 for  Kazhdan-Lusztig  theory)  and  a  method  `randpol`  to produce random
 polynomials.
 
-Inverting polynomials is a way to get a rational fraction  `Frac{Pol{T}}`.
-Rational fractions are normalized so that the numerator and denominator are
-true  polynomials prime to each other.  They have the arithmetic operations
-`+`,  `-` ,  `*`, `/`,  `//`, `^`,  `inv`, `one`, `isone`, `zero`, `iszero`
-(which can operate between a `Pol` or a `Number` and a `Frac{Pol{T}}`).
-
+Inverting  polynomials is a way to  get a rational fraction `Frac{Pol{T}}`,
+where  `Frac`  is  a  general  type  for  fractions. Rational fractions are
+normalized so that the numerator and denominator are true polynomials prime
+to  each other. They  have the arithmetic  operations `+`, `-`  , `*`, `/`,
+`//`,  `^`,  `inv`,  `one`,  `isone`,  `zero`,  `iszero` (which can operate
+between a `Pol` or a `Number` and a `Frac{Pol{T}}`).
 
 ```julia-repl
 julia> a=1/(q+1)
@@ -258,7 +264,11 @@ end
 function Pol(c::AbstractVector{T},v::Integer=0;check=true,copy=true)where T
   if check # normalize c so there are no leading or trailing zeroes
     b=findfirst(!iszero,c)
-    b===nothing && return Pol_(T[],0)
+    if b===nothing 
+      if length(c)>0 return Pol_([c[1]],0)
+      else return Pol_([T(0)],0) # try to avoid this case
+      end
+    end
     e=findlast(!iszero,c)
     if b!=1 || e!=length(c) || copy return Pol_(view(c,b:e),v+b-1) end
   end
@@ -266,7 +276,7 @@ function Pol(c::AbstractVector{T},v::Integer=0;check=true,copy=true)where T
 end
 
 Pol()=Pol_([1],1)
-Pol(a::T) where T<:Number=iszero(a) ? Pol_(T[],0) : Pol_([a],0)
+Pol(a::T) where T<:Number=Pol_([a],0)
 
 """
  `Pol(t::Symbol)`
@@ -300,12 +310,11 @@ coefficients(p::Pol)=p.c
 Base.lastindex(p::Pol)=degree(p)
 Base.firstindex(p::Pol)=valuation(p)
 @inbounds Base.getindex(p::Pol{T},i::Integer) where T=
-i in firstindex(p):lastindex(p) ? p.c[i-p.v+1] : iszero(p) ? zero(T) : zero(p.c[1])
+  i in firstindex(p):lastindex(p) ? p.c[i-p.v+1] : zero(p.c[1])
 
 Base.getindex(p::Pol,i::AbstractVector{<:Integer})=getindex.(Ref(p),i)
 
-Base.convert(::Type{Pol{T}},a::Number) where T=iszero(a) ? Pol_(T[],0) :
-                                                           Pol_([T(a)],0)
+Base.convert(::Type{Pol{T}},a::Number) where T=Pol_([T(a)],0)
 
 (::Type{Pol{T}})(a) where T=convert(Pol{T},a)
 
@@ -323,9 +332,7 @@ end
 Base.isinteger(p::Pol)=isinteger(scalar(p))
 
 function scalar(p::Pol{T})where T
-  if iszero(p) T(0)
-  elseif iszero(valuation(p)) && iszero(degree(p)) p[0]
-  end
+  if iszero(valuation(p)) && iszero(degree(p)) p[0] end
 end
 
 function Base.convert(::Type{T},p::Pol) where T<:Number
@@ -336,11 +343,11 @@ end
 
 (::Type{T})(p::Pol) where T<:Number=convert(T,p)
 
-Base.cmp(a::Pol,b::Pol)=cmp((a.c,a.v),(b.c,b.v))
+Base.cmp(a::Pol,b::Pol)=cmp((a.v,a.c),(b.v,b.c))
 Base.isless(a::Pol,b::Pol)=cmp(a,b)==-1
 Base.hash(a::Pol, h::UInt)=hash(a.v,hash(a.c,h))
 
-(p::Pol{T})(x) where T=iszero(p) ? zero(T) : evalpoly(x,p.c)*x^p.v
+(p::Pol{T})(x) where T=evalpoly(x,p.c)*x^p.v
 
 """
 `shift(p::Pol,s)`
@@ -348,27 +355,28 @@ efficient way to multiply a polynomial by `Pol()^s`.
 """
 shift(p::Pol{T},s) where T=Pol_(p.c,p.v+s)
 
+"`positive_part(p::Pol)` keep the terms of degree≥0"
 positive_part(p::Pol)=p.v>=0 ? copy(p) : Pol(view(p.c,1-p.v:length(p.c)),0)
 
+"`negative_part(p::Pol)` keep the terms of degree≤0"
 negative_part(p::Pol)=degree(p)<=0 ? copy(p) : Pol(view(p.c,1:1-p.v),p.v)
 
 # q↦ q⁻¹ on p
+"`bar(p::Pol)` transform p(q) into p(q⁻¹)"
 bar(p::Pol)=Pol_(reverse(p.c),-degree(p))
 
 Base.:(==)(a::Pol, b::Pol)= a.c==b.c && a.v==b.v
-Base.:(==)(a::Pol{T},b::Union{Number,T}) where T=
-    (iszero(a) && iszero(b))||(b!==nothing && scalar(a)==b)
-Base.:(==)(b::Union{Number,T},a::Pol{T}) where T=
-    (iszero(a) && iszero(b))||(b!==nothing && scalar(a)==b)
+Base.:(==)(a::Pol{T},b::Union{Number,T}) where T=b!==nothing && scalar(a)==b
+Base.:(==)(b::Union{Number,T},a::Pol{T}) where T=b!==nothing && scalar(a)==b
 
-Base.one(a::Pol{T}) where T=Pol_([iszero(a) ? one(T) : one(a.c[1])],0)
-Base.one(::Type{Pol{T}}) where T=Pol_([one(T)],0)
-Base.one(::Type{Pol})=one(Pol{Int})
-Base.isone(a::Pol)=!iszero(a) && scalar(a)==1
-Base.zero(::Type{Pol{T}}) where T=Pol_(T[],0)
-Base.zero(::Type{Pol})=zero(Pol{Int})
-Base.zero(a::Pol{T}) where T=Pol_(T[],0)
-Base.iszero(a::Pol)=isempty(a.c)
+Base.one(a::Pol{T}) where T=Pol_([one(a.c[1])],0)
+Base.one(::Type{Pol{T}}) where T=Pol_([one(T)],0) # try to avoid this
+#Base.one(::Type{Pol})=one(Pol{Int})
+Base.isone(a::Pol)=scalar(a)==1
+Base.zero(::Type{Pol{T}}) where T=Pol_([T(0)],0) # try to avoid this
+#Base.zero(::Type{Pol})=zero(Pol{Int})
+Base.zero(a::Pol{T}) where T=Pol_([zero(a.c[1])],0)
+Base.iszero(a::Pol)=length(a.c)==1 && iszero(a.c[1])
 # next 4 stuff to make transpose and inv using LU work (abs is stupid)
 Base.conj(p::Pol{T}) where T=Pol_(conj.(p.c),p.v)
 Base.abs(p::Pol)=p
@@ -447,7 +455,7 @@ end
 
 function Base.:*(a::Pol{T1},b::Pol{T2})where {T1,T2}
   T=promote_type(T1,T2)
-  if iszero(a) || iszero(b) return zero(Pol{T}) end
+  if iszero(a) || iszero(b) return Pol([a.c[1]*b.c[1]]) end
   # below not zero(T) for types T like Mod{T1} which have no zero method
   res=fill(zero(a.c[1]*b.c[1]),length(a.c)+length(b.c)-1)
   for i in eachindex(a.c), j in eachindex(b.c)
@@ -468,7 +476,6 @@ Base.:^(a::Pol, n::Integer)=ismonomial(a) ? Pol_([a.c[1]^n],n*a.v) :
                 Base.power_by_squaring(inv(a),-n)
 
 function Base.:+(a::Pol,b::Pol)
-  if iszero(a) return b elseif iszero(b) return a end
   z=zero(a.c[1]+b.c[1])
   d=b.v-a.v
   if d>=0
@@ -485,7 +492,6 @@ function Base.:+(a::Pol,b::Pol)
 end
 
 function Base.:-(a::Pol,b::Pol)
-  if iszero(a) return -b elseif iszero(b) return a end
   z=zero(a.c[1]+b.c[1])
   d=b.v-a.v
   if d>=0
@@ -585,7 +591,7 @@ For true polynomials (errors if the valuation of `a` or of `b` is negative).
 See Knuth AOCP2 4.6.1 Algorithm R
 """
 function pseudodiv(a::Pol, b::Pol)
- if isone(b) || iszero(a) return a,zero(a) end
+  if isone(b) || iszero(a) return a,zero(a) end
   if iszero(b) throw(DivideError) end
   d=b.c[end]
   if degree(a)<degree(b) return (zero(a),d^(degree(a)+1-degree(b))*a) end
@@ -761,7 +767,7 @@ Pol{Float64}: 1.0q²+1.0q+1.0
 ```
 """
 function Pol(pts::AbstractVector,vals::AbstractVector)
-  vals=copy(vals)
+  vals=collect(vals)
   a=map(eachindex(pts))do i
     for k in i-1:-1:1
       if pts[i]==pts[k] error("interpolating points must be distinct") end
@@ -776,12 +782,11 @@ function Pol(pts::AbstractVector,vals::AbstractVector)
   p
 end
 
-Base.denominator(p::Pol)=iszero(p) ? 1 : lcm(denominator.(p.c))
+Base.denominator(p::Pol)=lcm(denominator.(p.c))
 Base.numerator(p::Pol{<:Rational{T}}) where T=convert(Pol{T},p*denominator(p))
 
 function root(x::Pol,n::Union{Integer,Rational{<:Integer}}=2)
   n=Int(n)
-  if iszero(x) return x end
   if !ismonomial(x) || !iszero(x.v%n) error("root($x,$n) not implemented") end
   c=x.c[1]
   Pol_([isone(c) ? c : root(c,n)],div(x.v,n))
@@ -885,9 +890,7 @@ power  of  the  variable  so  they  become  true  polynomials),  and unless
 `prime=true` they are checked for having a non-trivial `gcd`.
 """
 function Frac(a::T,b::T;prime=false)::Frac{T} where T<:Pol
-  if iszero(a) return Frac_(a,one(a))
-  elseif iszero(b) error("division by 0")
-  end
+  if iszero(b) error("division by 0") end
   a,b=make_positive(a,b)
   if !prime
     d=gcd(a,b)
@@ -898,7 +901,7 @@ function Frac(a::T,b::T;prime=false)::Frac{T} where T<:Pol
 end
 
 function Pol(p::Frac{<:Pol})
-  if ismonomial(p.den)==1
+  if ismonomial(p.den)
     if isone(p.den.c[1]^2) return Pol(p.num.c .*p.den.c[1],p.num.v-p.den.v)
     else return Pol(p.num.c .//p.den.c[1],p.num.v-p.den.v)
     end
@@ -979,5 +982,5 @@ end
 
 (p::Frac{<:Pol})(x;Rational=false)=Rational ? p.num(x)//p.den(x) : p.num(x)/p.den(x)
 # @btime inv(Frac.([q+1 q+2;q-2 q-3])) setup=(q=Pol())
-# 32.556 μs (938 allocations: 57.22 KiB)
+# 1.9.3 27.855 μs (673 allocations: 46.39 KiB)
 end
