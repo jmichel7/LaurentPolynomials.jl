@@ -12,19 +12,20 @@
 
 
 
-This  package, which depends only on `LinearAlgebra`, implements univariate Laurent  polynomials  (type  `Pol{T}`),  and  univariate rational fractions (type `Frac{Pol{T}}`).
+This  package  implements  univariate  Laurent  polynomials, and univariate rational  fractions. The  coefficients can  be in  any ring  (possibly even non-commutative, like `Matrix{Int}).
 
-The  initial motivation was to have a simple way to port GAP polynomials to Julia. The reasons for still having my own package are multiple:
+The  initial  motivation  in  2018  was  to  have  an  easy way to port GAP polynomials  to  Julia.  The  reasons  for  still having my own package are multiple:
 
-  * I need  to have  a simple  and flexible  interface, which  I hope this provides.
-  * I need my polynomials to behave  well when coefficients are in a ring, in which case I use pseudo-division and subresultant gcd.
-  * For my uses my polynomials are several times faster than those in the package `Polynomials`.
-  * I need my polynomials to  work as well as possible with coefficients of types  `T` where elements have a `zero`  method but `T` itself does not have  one (because `T` does not  contain the necessary information). An example is modular arithmetic with a `BigInt` modulus which thus cannot be part of the type.
-  * a final justification is that `LaurentPolynomials` is used by `PuiseuxPolynomials`.
+  * I  need  my  polynomials  to  behave  well  when coefficients are in a ring,  in which  case I use pseudo-division and subresultant gcd.
+  * I need my polynomials to  work as well as possible with coefficients of type  `T` where the elements  have a `zero` method  but `T` itself does not  have one, because `T` does  not contain the necessary information. An  example is modular arithmetic with  a `BigInt` modulus which cannot be  part of the  type. For this  reason the `zero`  polynomial does not have  an empty list of coefficients,  but a list containing one element equal  to zero, so it is  always possible to get a  zero of type T from the zero polynomial.
+  * `LaurentPolynomials` is designed to be used by `PuiseuxPolynomials`.
+  * In many cases, my polynomials are several times faster than those in the package `Polynomials`. Also the interface is simple and flexible.
+
+The  only package on which this package depends is `LinearAlgebra`, through the use of the function `exactdiv`.
 
 Laurent polynomials have the parametric type `Pol{T}`, where `T`is the type of   the  coefficients.  They  are  constructed   by  giving  a  vector  of coefficients  of  type  `T`,  and  a  valuation  (an  `Int`).  We call true polynomials those whose valuation is `≥0`.
 
-There  is a  current variable  name (a  `Symbol`) used to print polynomials nicely  at  the  repl  or  in  IJulia  or  Pluto.  This name can be changed globally,  or just changed for printing a given polynomial. But polynomials do not record individually with which symbol they should be printed.
+There  is  a  current  variable  name  (a  `Symbol`) which is used to print polynomials  nicely at  the repl  or in  IJulia or  Pluto. This name can be changed   globally,  or  just  for  printing  a  specific  polynomial.  But polynomials  do not record individually which symbol they should be printed with.
 
 **Examples**
 
@@ -165,7 +166,7 @@ Pol{Float64}: 0.5q+0.5
 
 Finally,   `Pol`s  have   methods  `conj`,   `adjoint`  which   operate  on coefficients,  methods `positive_part`,  `negative_part` and  `bar` (useful for  Kazhdan-Lusztig  theory)  and  a  method  `randpol`  to produce random polynomials.
 
-Inverting polynomials is a way to get a rational fraction  `Frac{Pol{T}}`. Rational fractions are normalized so that the numerator and denominator are true  polynomials prime to each other.  They have the arithmetic operations `+`,  `-` ,  `*`, `/`,  `//`, `^`,  `inv`, `one`, `isone`, `zero`, `iszero` (which can operate between a `Pol` or a `Number` and a `Frac{Pol{T}}`).
+Inverting  polynomials is a way to  get a rational fraction `Frac{Pol{T}}`, where  `Frac`  is  a  general  type  for  fractions. Rational fractions are normalized so that the numerator and denominator are true polynomials prime to  each other. They  have the arithmetic  operations `+`, `-`  , `*`, `/`, `//`,  `^`,  `inv`,  `one`,  `isone`,  `zero`,  `iszero` (which can operate between a `Pol` or a `Number` and a `Frac{Pol{T}}`).
 
 ```julia-repl
 julia> a=1/(q+1)
@@ -204,7 +205,7 @@ julia> map(x->x(1;Rational=true),n) # evaluate at 1 using //
 Rational fractions are also scalars for broadcasting and can be sorted (have `cmp` and `isless` methods).
 
 
-<a target='_blank' href='https://github.com/jmichel7/LaurentPolynomials.jl/blob/8aef54e3e463f8c5cf498a1a33e1b5230de1ff61/src/LaurentPolynomials.jl#L1-L230' class='documenter-source'>source</a><br>
+<a target='_blank' href='https://github.com/jmichel7/LaurentPolynomials.jl/blob/95a01357168a839e9c34cb27778f20d230229572/src/LaurentPolynomials.jl#L1-L236' class='documenter-source'>source</a><br>
 
 <a id='LaurentPolynomials.Pol' href='#LaurentPolynomials.Pol'>#</a>
 **`LaurentPolynomials.Pol`** &mdash; *Type*.
@@ -220,7 +221,7 @@ Unless  `check` is `false`  normalize the result  by making sure that `c`   has 
 Unless  `copy=false` the  contents of  `c` are  copied (you  can gain one   allocation by setting `copy=false` if you know the contents can be shared)
 
 
-<a target='_blank' href='https://github.com/jmichel7/LaurentPolynomials.jl/blob/8aef54e3e463f8c5cf498a1a33e1b5230de1ff61/src/LaurentPolynomials.jl#L246-L257' class='documenter-source'>source</a><br>
+<a target='_blank' href='https://github.com/jmichel7/LaurentPolynomials.jl/blob/95a01357168a839e9c34cb27778f20d230229572/src/LaurentPolynomials.jl#L252-L263' class='documenter-source'>source</a><br>
 
 
 `Pol(t::Symbol)`
@@ -228,7 +229,7 @@ Unless  `copy=false` the  contents of  `c` are  copied (you  can gain one   allo
 Sets the name of the variable for printing `Pol`s to `t`, and returns  the polynomial of degree 1 equal to that variable.
 
 
-<a target='_blank' href='https://github.com/jmichel7/LaurentPolynomials.jl/blob/8aef54e3e463f8c5cf498a1a33e1b5230de1ff61/src/LaurentPolynomials.jl#L271-L276' class='documenter-source'>source</a><br>
+<a target='_blank' href='https://github.com/jmichel7/LaurentPolynomials.jl/blob/95a01357168a839e9c34cb27778f20d230229572/src/LaurentPolynomials.jl#L281-L286' class='documenter-source'>source</a><br>
 
 
 `Pol(x::AbstractVector,y::AbstractVector)`
@@ -255,7 +256,7 @@ Pol{Float64}: 1.0q²+1.0q+1.0
 ```
 
 
-<a target='_blank' href='https://github.com/jmichel7/LaurentPolynomials.jl/blob/8aef54e3e463f8c5cf498a1a33e1b5230de1ff61/src/LaurentPolynomials.jl#L732-L757' class='documenter-source'>source</a><br>
+<a target='_blank' href='https://github.com/jmichel7/LaurentPolynomials.jl/blob/95a01357168a839e9c34cb27778f20d230229572/src/LaurentPolynomials.jl#L757-L782' class='documenter-source'>source</a><br>
 
 <a id='LaurentPolynomials.@Pol' href='#LaurentPolynomials.@Pol'>#</a>
 **`LaurentPolynomials.@Pol`** &mdash; *Macro*.
@@ -267,7 +268,7 @@ Pol{Float64}: 1.0q²+1.0q+1.0
 is equivalent to `q=Pol(:q)` excepted it creates `q` in the global scope of  the current module, since it uses `eval`.
 
 
-<a target='_blank' href='https://github.com/jmichel7/LaurentPolynomials.jl/blob/8aef54e3e463f8c5cf498a1a33e1b5230de1ff61/src/LaurentPolynomials.jl#L282-L287' class='documenter-source'>source</a><br>
+<a target='_blank' href='https://github.com/jmichel7/LaurentPolynomials.jl/blob/95a01357168a839e9c34cb27778f20d230229572/src/LaurentPolynomials.jl#L292-L297' class='documenter-source'>source</a><br>
 
 <a id='Base.divrem' href='#Base.divrem'>#</a>
 **`Base.divrem`** &mdash; *Function*.
@@ -279,7 +280,7 @@ is equivalent to `q=Pol(:q)` excepted it creates `q` in the global scope of  the
 `a` and `b` should be true polynomials (nonnegative valuation). Computes  `(q,r)` such  that `a=q*b+r`  and `degree(r)<degree(b)`. Type stable if the coefficients of `b` are in a field.
 
 
-<a target='_blank' href='https://github.com/jmichel7/LaurentPolynomials.jl/blob/8aef54e3e463f8c5cf498a1a33e1b5230de1ff61/src/LaurentPolynomials.jl#L530-L536' class='documenter-source'>source</a><br>
+<a target='_blank' href='https://github.com/jmichel7/LaurentPolynomials.jl/blob/95a01357168a839e9c34cb27778f20d230229572/src/LaurentPolynomials.jl#L538-L544' class='documenter-source'>source</a><br>
 
 <a id='Base.gcd-Tuple{Pol, Pol}' href='#Base.gcd-Tuple{Pol, Pol}'>#</a>
 **`Base.gcd`** &mdash; *Method*.
@@ -289,15 +290,15 @@ is equivalent to `q=Pol(:q)` excepted it creates `q` in the global scope of  the
 `gcd(p::Pol,  q::Pol)` computes the  `gcd` of the  polynomials. It uses the subresultant algorithms for the `gcd` of integer polynomials.
 
 ```julia-repl
-julia> gcd(2q+2,q^2-1)
-Pol{Int64}: q+1
+julia> gcd(2q+2,2q^2-2)
+Pol{Int64}: 2q+2
 
-julia> gcd(q+1//1,q^2-1//1)
+julia> gcd((2q+2)//1,(2q^2-2)//1)
 Pol{Rational{Int64}}: (1//1)q+1//1
 ```
 
 
-<a target='_blank' href='https://github.com/jmichel7/LaurentPolynomials.jl/blob/8aef54e3e463f8c5cf498a1a33e1b5230de1ff61/src/LaurentPolynomials.jl#L650-L661' class='documenter-source'>source</a><br>
+<a target='_blank' href='https://github.com/jmichel7/LaurentPolynomials.jl/blob/95a01357168a839e9c34cb27778f20d230229572/src/LaurentPolynomials.jl#L675-L686' class='documenter-source'>source</a><br>
 
 <a id='Base.gcdx-Tuple{Pol, Pol}' href='#Base.gcdx-Tuple{Pol, Pol}'>#</a>
 **`Base.gcdx`** &mdash; *Method*.
@@ -314,7 +315,7 @@ julia> gcdx(q^3-1//1,q^2-1//1)
 ```
 
 
-<a target='_blank' href='https://github.com/jmichel7/LaurentPolynomials.jl/blob/8aef54e3e463f8c5cf498a1a33e1b5230de1ff61/src/LaurentPolynomials.jl#L674-L684' class='documenter-source'>source</a><br>
+<a target='_blank' href='https://github.com/jmichel7/LaurentPolynomials.jl/blob/95a01357168a839e9c34cb27778f20d230229572/src/LaurentPolynomials.jl#L699-L709' class='documenter-source'>source</a><br>
 
 <a id='LaurentPolynomials.pseudodiv' href='#LaurentPolynomials.pseudodiv'>#</a>
 **`LaurentPolynomials.pseudodiv`** &mdash; *Function*.
@@ -325,10 +326,18 @@ julia> gcdx(q^3-1//1,q^2-1//1)
 
 pseudo-division  of `a` by `b`.  If `d` is the  leading coefficient of `b`, computes   `(q,r)`   such   that   `d^(degree(a)+1-degree(b))a=q*b+r`   and `degree(r)<degree(b)`. Does not do division so works over any ring. For true polynomials (errors if the valuation of `a` or of `b` is negative).
 
+```julia-repl
+julia> pseudodiv(q^2+1,2q+1)
+(2q-1, 5)
+
+julia> (2q+1)*(2q-1)+5
+Pol{Int64}: 4q²+4
+```
+
 See Knuth AOCP2 4.6.1 Algorithm R
 
 
-<a target='_blank' href='https://github.com/jmichel7/LaurentPolynomials.jl/blob/8aef54e3e463f8c5cf498a1a33e1b5230de1ff61/src/LaurentPolynomials.jl#L577-L586' class='documenter-source'>source</a><br>
+<a target='_blank' href='https://github.com/jmichel7/LaurentPolynomials.jl/blob/95a01357168a839e9c34cb27778f20d230229572/src/LaurentPolynomials.jl#L585-L601' class='documenter-source'>source</a><br>
 
 <a id='LaurentPolynomials.srgcd' href='#LaurentPolynomials.srgcd'>#</a>
 **`LaurentPolynomials.srgcd`** &mdash; *Function*.
@@ -339,10 +348,15 @@ See Knuth AOCP2 4.6.1 Algorithm R
 
 sub-resultant gcd: gcd of polynomials over a unique factorization domain
 
+```julia-repl
+julia> srgcd(4q+4,6q^2-6)
+Pol{Int64}: 2q+2
+```
+
 See Knuth AOCP2 4.6.1 Algorithm C
 
 
-<a target='_blank' href='https://github.com/jmichel7/LaurentPolynomials.jl/blob/8aef54e3e463f8c5cf498a1a33e1b5230de1ff61/src/LaurentPolynomials.jl#L609-L615' class='documenter-source'>source</a><br>
+<a target='_blank' href='https://github.com/jmichel7/LaurentPolynomials.jl/blob/95a01357168a839e9c34cb27778f20d230229572/src/LaurentPolynomials.jl#L624-L635' class='documenter-source'>source</a><br>
 
 <a id='Base.powermod' href='#Base.powermod'>#</a>
 **`Base.powermod`** &mdash; *Function*.
@@ -357,7 +371,7 @@ Pol{Rational{Int64}}: (6//1)q+3//1
 ```
 
 
-<a target='_blank' href='https://github.com/jmichel7/LaurentPolynomials.jl/blob/8aef54e3e463f8c5cf498a1a33e1b5230de1ff61/src/LaurentPolynomials.jl#L701-L707' class='documenter-source'>source</a><br>
+<a target='_blank' href='https://github.com/jmichel7/LaurentPolynomials.jl/blob/95a01357168a839e9c34cb27778f20d230229572/src/LaurentPolynomials.jl#L726-L732' class='documenter-source'>source</a><br>
 
 <a id='LaurentPolynomials.randpol' href='#LaurentPolynomials.randpol'>#</a>
 **`LaurentPolynomials.randpol`** &mdash; *Function*.
@@ -369,7 +383,7 @@ Pol{Rational{Int64}}: (6//1)q+3//1
 random polynomial of degree `d` with coefficients from `T`
 
 
-<a target='_blank' href='https://github.com/jmichel7/LaurentPolynomials.jl/blob/8aef54e3e463f8c5cf498a1a33e1b5230de1ff61/src/LaurentPolynomials.jl#L725-L729' class='documenter-source'>source</a><br>
+<a target='_blank' href='https://github.com/jmichel7/LaurentPolynomials.jl/blob/95a01357168a839e9c34cb27778f20d230229572/src/LaurentPolynomials.jl#L750-L754' class='documenter-source'>source</a><br>
 
 <a id='LaurentPolynomials.Frac' href='#LaurentPolynomials.Frac'>#</a>
 **`LaurentPolynomials.Frac`** &mdash; *Type*.
@@ -381,5 +395,45 @@ random polynomial of degree `d` with coefficients from `T`
 Polynomials  `a` and `b` are promoted to same coefficient type, and checked for  being true polynomials (otherwise they are both multiplied by the same power  of  the  variable  so  they  become  true  polynomials),  and unless `prime=true` they are checked for having a non-trivial `gcd`.
 
 
-<a target='_blank' href='https://github.com/jmichel7/LaurentPolynomials.jl/blob/8aef54e3e463f8c5cf498a1a33e1b5230de1ff61/src/LaurentPolynomials.jl#L873-L880' class='documenter-source'>source</a><br>
+<a target='_blank' href='https://github.com/jmichel7/LaurentPolynomials.jl/blob/95a01357168a839e9c34cb27778f20d230229572/src/LaurentPolynomials.jl#L898-L905' class='documenter-source'>source</a><br>
+
+<a id='LaurentPolynomials.negative_part' href='#LaurentPolynomials.negative_part'>#</a>
+**`LaurentPolynomials.negative_part`** &mdash; *Function*.
+
+
+
+`negative_part(p::Pol)` keep the terms of degree≤0
+
+
+<a target='_blank' href='https://github.com/jmichel7/LaurentPolynomials.jl/blob/95a01357168a839e9c34cb27778f20d230229572/src/LaurentPolynomials.jl#L361' class='documenter-source'>source</a><br>
+
+<a id='LaurentPolynomials.positive_part' href='#LaurentPolynomials.positive_part'>#</a>
+**`LaurentPolynomials.positive_part`** &mdash; *Function*.
+
+
+
+`positive_part(p::Pol)` keep the terms of degree≥0
+
+
+<a target='_blank' href='https://github.com/jmichel7/LaurentPolynomials.jl/blob/95a01357168a839e9c34cb27778f20d230229572/src/LaurentPolynomials.jl#L358' class='documenter-source'>source</a><br>
+
+<a id='LaurentPolynomials.bar' href='#LaurentPolynomials.bar'>#</a>
+**`LaurentPolynomials.bar`** &mdash; *Function*.
+
+
+
+`bar(p::Pol)` transform p(q) into p(q⁻¹)
+
+
+<a target='_blank' href='https://github.com/jmichel7/LaurentPolynomials.jl/blob/95a01357168a839e9c34cb27778f20d230229572/src/LaurentPolynomials.jl#L365' class='documenter-source'>source</a><br>
+
+<a id='LaurentPolynomials.shift' href='#LaurentPolynomials.shift'>#</a>
+**`LaurentPolynomials.shift`** &mdash; *Function*.
+
+
+
+`shift(p::Pol,s)` efficient way to multiply a polynomial by `Pol()^s`.
+
+
+<a target='_blank' href='https://github.com/jmichel7/LaurentPolynomials.jl/blob/95a01357168a839e9c34cb27778f20d230229572/src/LaurentPolynomials.jl#L352-L355' class='documenter-source'>source</a><br>
 

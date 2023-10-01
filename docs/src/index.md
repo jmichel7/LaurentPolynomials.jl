@@ -15,4 +15,8 @@ srgcd
 powermod
 randpol
 Frac
+negative_part
+positive_part
+bar
+shift
 ```

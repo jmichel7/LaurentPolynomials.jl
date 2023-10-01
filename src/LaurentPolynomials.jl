@@ -1,26 +1,25 @@
 """
 This  package  implements  univariate  Laurent  polynomials, and univariate
-rational fractions.
+rational  fractions. The  coefficients can  be in  any ring  (possibly even
+non-commutative, like `Matrix{Int}).
 
-The  initial motivation was to have a simple way to port GAP polynomials to
-Julia. The reasons for still having my own package are multiple:
+The  initial  motivation  in  2018  was  to  have  an  easy way to port GAP
+polynomials  to  Julia.  The  reasons  for  still having my own package are
+multiple:
 
   - I  need  my  polynomials  to  behave  well  when coefficients are in a
-    (possible  non-commutative) ring,  in which  case I use pseudo-division
-    and subresultant gcd.
+    ring,  in which  case I use pseudo-division and subresultant gcd.
   - I need my polynomials to  work as well as possible with coefficients of
-    types  `T` where elements have a `zero`  method but `T` itself does not
-    have  one, because `T`  does not contain  the necessary information. An
-    example is modular arithmetic with a `BigInt` modulus which thus cannot
-    be  part of the type.  For this reason the  `zero` polynomials does not
+    type  `T` where the elements  have a `zero` method  but `T` itself does
+    not  have one, because `T` does  not contain the necessary information.
+    An  example is modular arithmetic with  a `BigInt` modulus which cannot
+    be  part of the  type. For this  reason the `zero`  polynomial does not
     have  an empty list of coefficients,  but a list containing one element
     equal  to zero, so it is  always possible to get a  zero of type T from
     the zero polynomial.
   - `LaurentPolynomials` is designed to be used by `PuiseuxPolynomials`.
-  - I need  to have  a simple  and flexible  interface, which  I hope this
-    provides.
   - In many cases, my polynomials are several times faster than those in
-    the package `Polynomials`.
+    the package `Polynomials`. Also the interface is simple and flexible.
 
 The  only package on which this package depends is `LinearAlgebra`, through
 the use of the function `exactdiv`.
@@ -30,10 +29,11 @@ of   the  coefficients.  They  are  constructed   by  giving  a  vector  of
 coefficients  of  type  `T`,  and  a  valuation  (an  `Int`).  We call true
 polynomials those whose valuation is `≥0`.
 
-There  is a  current variable  name (a  `Symbol`) used to print polynomials
-nicely  at  the  repl  or  in  IJulia  or  Pluto.  This name can be changed
-globally,  or just changed for printing a given polynomial. But polynomials
-do not record individually with which symbol they should be printed.
+There  is  a  current  variable  name  (a  `Symbol`) which is used to print
+polynomials  nicely at  the repl  or in  IJulia or  Pluto. This name can be
+changed   globally,  or  just  for  printing  a  specific  polynomial.  But
+polynomials  do not record individually which symbol they should be printed
+with.
 
 # Examples
 ```julia-repl
@@ -464,10 +464,10 @@ function Base.:*(a::Pol{T1},b::Pol{T2})where {T1,T2}
   Pol_(res,a.v+b.v)
 end
 
-Base.:*(a::Pol, b::Number)=Pol(a.c.*b,a.v)
-Base.:*(a::Pol{T}, b::T) where T=Pol(a.c.*b,a.v;copy=false)
-Base.:*(b::Number, a::Pol)=a*b
-Base.:*(b::T, a::Pol{T}) where T=a*b
+Base.:*(a::Pol, b::Number)=Pol(a.c.*Ref(b),a.v)
+Base.:*(a::Pol{T}, b::T) where T=Pol(a.c.*Ref(b),a.v;copy=false)
+Base.:*(b::Number, a::Pol)=Pol(Ref(b).*a.c,a.v)
+Base.:*(b::T, a::Pol{T}) where T=Pol(Ref(b).*a.c,a.v;copy=false)
 
 Base.:^(a::Pol, n::Real)=isinteger(n) ? a^Int(n) : root(a,1//n)
 
@@ -528,8 +528,10 @@ function coeffexactdiv(a::Pol,b)
 end
 LinearAlgebra.exactdiv(a::Pol,b::Number)=coeffexactdiv(a,b)
 
-Base.:/(p::Pol,q::Number)=Pol_(p.c./q,p.v)
-Base.://(p::Pol,q::Number)=Pol_(p.c.//q,p.v)
+Base.:/(p::Pol,q::Number)=Pol_(p.c./Ref(q),p.v)
+Base.://(p::Pol,q::Number)=Pol_(p.c.//Ref(q),p.v)
+Base.:/(p::Pol{T},q::T) where T=Pol_(p.c./Ref(q),p.v)
+Base.://(p::Pol{T},q::T) where T=Pol_(p.c.//Ref(q),p.v)
 
 derivative(a::Pol)=Pol([(i+a.v-1)*v for (i,v) in enumerate(a.c)],a.v-1,copy=false)
 
@@ -553,7 +555,7 @@ function Base.divrem(a::Pol, b::Pol)
   for i in length(r):-1:degree(b)+1
     if iszero(r[i]) c=zero(d)
     else c=r[i]*d
-         view(r,i-length(b.c)+1:i) .-= c .* b.c
+     view(r,i-length(b.c)+1:i).-=Ref(c).*b.c
     end
     q[i-degree(b)]=c
   end
@@ -573,7 +575,7 @@ function LinearAlgebra.exactdiv(a::Pol,b::Pol)
   q=fill(z,length(r)-degree(b))
   for i in length(r):-1:degree(b)+1
     c=exactdiv(r[i],b.c[end])
-    view(r,i-length(b.c)+1:i) .-= c .* b.c
+    view(r,i-length(b.c)+1:i).-=Ref(c).*b.c
     q[i-length(b.c)+1]=c
   end
   if !iszero(r) error(b," does not exactly divide ",a) end
@@ -588,6 +590,13 @@ computes   `(q,r)`   such   that   `d^(degree(a)+1-degree(b))a=q*b+r`   and
 `degree(r)<degree(b)`. Does not do division so works over any ring.
 For true polynomials (errors if the valuation of `a` or of `b` is negative).
 
+```julia-repl
+julia> pseudodiv(q^2+1,2q+1)
+(2q-1, 5)
+
+julia> (2q+1)*(2q-1)+5
+Pol{Int64}: 4q²+4
+```
 See Knuth AOCP2 4.6.1 Algorithm R
 """
 function pseudodiv(a::Pol, b::Pol)
@@ -602,8 +611,8 @@ function pseudodiv(a::Pol, b::Pol)
   q=fill(z,length(r)-degree(b))
   for i in length(r):-1:degree(b)+1
     c=r[i]
-    r.*=d
-    q.*=d
+    r.*=Ref(d)
+    q.*=Ref(d)
     if !iszero(c)
       for j in eachindex(b.c) r[j+i-length(b.c)]-=c*b.c[j] end
     end
@@ -617,6 +626,11 @@ end
 
 sub-resultant gcd: gcd of polynomials over a unique factorization domain
 
+```julia-repl
+julia> srgcd(4q+4,6q^2-6)
+Pol{Int64}: 2q+2
+```
+
 See Knuth AOCP2 4.6.1 Algorithm C
 """
 function srgcd(a::Pol,b::Pol)
@@ -629,14 +643,14 @@ function srgcd(a::Pol,b::Pol)
   ca=gcd(a.c);a=coeffexactdiv(a,ca)
   cb=gcd(b.c);b=coeffexactdiv(b,cb)
   d=gcd(ca,cb)
-  g=one(eltype(a.c))
-  h=one(eltype(a.c))
+  g=one(a.c[1])
+  h=one(a.c[1])
   while true
     δ=degree(a)-degree(b)
     q,r=pseudodiv(a,b)
     if iszero(r)
       cb=gcd(b.c);b=coeffexactdiv(b,cb)
-      return isone(d) ? shift(b,v) : Pol_(b.c .*d,b.v+v)
+      return isone(d) ? shift(b,v) : Pol_(b.c.*Ref(d),b.v+v)
     elseif degree(r)==0
       return Pol_([d],v)
     end
@@ -663,10 +677,10 @@ Base.:%(a::Pol{<:Integer}, b::Pol{<:Integer})=divrem(a,b)[2]
 subresultant algorithms for the `gcd` of integer polynomials.
 
 ```julia-repl
-julia> gcd(2q+2,q^2-1)
-Pol{Int64}: q+1
+julia> gcd(2q+2,2q^2-2)
+Pol{Int64}: 2q+2
 
-julia> gcd(q+1//1,q^2-1//1)
+julia> gcd((2q+2)//1,(2q^2-2)//1)
 Pol{Rational{Int64}}: (1//1)q+1//1
 ```
 """
@@ -706,7 +720,7 @@ function Base.gcdx(a::Pol, b::Pol)
     s0, s1=s1, s0 - q*s1
     t0, t1=t1, t0 - q*t1
   end
-  (x, s0, t0)./x[end]
+  (x, s0, t0)./Ref(x[end])
 end
 
 """
@@ -818,9 +832,9 @@ Base.broadcastable(p::Frac)=Ref(p)
 
 Base.copy(a::Frac)=Frac_(a.num,a.den)
 Base.one(a::Frac)=Frac_(one(a.num),one(a.den))
-Base.one(::Type{Frac{T}}) where T =Frac_(one(T),one(T))
+Base.one(::Type{Frac{T}}) where T =Frac_(one(T),one(T)) # avoid this
 Base.isone(a::Frac)=a.num==a.den
-Base.zero(::Type{Frac{T}}) where T =Frac_(zero(T),one(T))
+Base.zero(::Type{Frac{T}}) where T =Frac_(zero(T),one(T)) # avoid this
 Base.zero(a::Frac)=Frac_(zero(a.num),one(a.num))
 Base.iszero(a::Frac)=iszero(a.num)
 # next 3 methods are to make inv using LU work (abs is stupid)
@@ -902,8 +916,8 @@ end
 
 function Pol(p::Frac{<:Pol})
   if ismonomial(p.den)
-    if isone(p.den.c[1]^2) return Pol(p.num.c .*p.den.c[1],p.num.v-p.den.v)
-    else return Pol(p.num.c .//p.den.c[1],p.num.v-p.den.v)
+    if isone(p.den.c[1]^2) return Pol(p.num.c.*Ref(p.den.c[1]),p.num.v-p.den.v)
+    else return Pol(p.num.c.//Ref(p.den.c[1]),p.num.v-p.den.v)
     end
   end
   error("cannot convert ",p," to Pol")
@@ -912,7 +926,7 @@ end
 Base.convert(::Type{Pol{T}},p::Frac) where {T}=convert(Pol{T},Pol(p))
 
 function Base.convert(::Type{Frac{T}},p::Pol) where T
-  f=Frac(convert(T,p),one(T);prime=true)
+  f=Frac(convert(T,p),convert(T,one(p));prime=true)
   Frac_(convert(T,f.num),convert(T,f.den))
 end
 
@@ -976,7 +990,7 @@ Base.://(p::Number,q::Pol)=Frac(Pol(p),q;prime=true)
 Base.://(a::Frac,b::Frac)=Frac(a.num*b.den,a.den*b.num)
 
 function Base.://(a::Pol,b::Pol)
-  if ismonomial(b) return Pol(a.c.//b.c[1],a.v-b.v) end
+  if ismonomial(b) return Pol(a.c.//Ref(b.c[1]),a.v-b.v) end
   Frac(a,b)
 end
 
