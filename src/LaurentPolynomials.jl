@@ -369,13 +369,11 @@ Base.:(==)(a::Pol, b::Pol)= a.c==b.c && a.v==b.v
 Base.:(==)(a::Pol{T},b::Union{Number,T}) where T=b!==nothing && scalar(a)==b
 Base.:(==)(b::Union{Number,T},a::Pol{T}) where T=b!==nothing && scalar(a)==b
 
-Base.one(a::Pol{T}) where T=Pol_([one(a.c[1])],0)
+Base.one(a::Pol)=Pol_([one(a.c[1])],0)
 Base.one(::Type{Pol{T}}) where T=Pol_([one(T)],0) # try to avoid this
-#Base.one(::Type{Pol})=one(Pol{Int})
 Base.isone(a::Pol)=scalar(a)==1
 Base.zero(::Type{Pol{T}}) where T=Pol_([T(0)],0) # try to avoid this
-#Base.zero(::Type{Pol})=zero(Pol{Int})
-Base.zero(a::Pol{T}) where T=Pol_([zero(a.c[1])],0)
+Base.zero(a::Pol)=Pol_([zero(a.c[1])],0)
 Base.iszero(a::Pol)=length(a.c)==1 && iszero(a.c[1])
 # next 4 stuff to make transpose and inv using LU work (abs is stupid)
 Base.conj(p::Pol{T}) where T=Pol_(conj.(p.c),p.v)
