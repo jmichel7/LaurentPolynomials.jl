@@ -343,7 +343,7 @@ end
 
 (::Type{T})(p::Pol) where T<:Number=convert(T,p)
 
-Base.cmp(a::Pol,b::Pol)=cmp((a.v,a.c),(b.v,b.c))
+Base.cmp(a::Pol,b::Pol)=cmp((!iszero(a),a.v,a.c),(!iszero(b),b.v,b.c))
 Base.isless(a::Pol,b::Pol)=cmp(a,b)==-1
 Base.hash(a::Pol, h::UInt)=hash(a.v,hash(a.c,h))
 
@@ -635,8 +635,7 @@ function srgcd(a::Pol,b::Pol)
   if iszero(b) return a end
   if iszero(a) return b end
   v=min(valuation(a),valuation(b))
-  a=shift(a,-valuation(a))
-  b=shift(b,-valuation(b))
+  a=shift(a,-valuation(a));b=shift(b,-valuation(b)) # reducing degree cheap
   if degree(b)>degree(a) return shift(srgcd(b,a),v) end
   ca=gcd(a.c);a=coeffexactdiv(a,ca)
   cb=gcd(b.c);b=coeffexactdiv(b,cb)
@@ -655,9 +654,12 @@ function srgcd(a::Pol,b::Pol)
     a=b
     gh=g*h^δ
     b=coeffexactdiv(r,gh)
-    b=shift(b,-valuation(b))
     g=a[end]
-    if δ>0 h=exactdiv(g^δ,h^(δ-1)) end
+    if δ>1 
+      h=exactdiv(g^δ,h^(δ-1))
+    else 
+      h=g^δ*h^(1-δ)
+    end
   end
 end
 
@@ -841,6 +843,7 @@ Base.conj(p::Frac)=Frac_(conj(p.num),conj(p.den))
 Base.adjoint(a::Frac)=conj(a)
 Base.:(==)(a::Frac,b::Frac)=a.num==b.num && a.den==b.den
 Base.cmp(a::Frac,b::Frac)=cmp((a.num,a.den),(b.num,b.den))
+Base.hash(a::Frac, h::UInt)=hash(a.num,hash(a.den,h))
 Base.isless(a::Frac,b::Frac)=cmp(a,b)==-1
 
 function Base.show(io::IO, ::MIME"text/plain", a::Frac)
@@ -995,4 +998,5 @@ end
 (p::Frac{<:Pol})(x;Rational=false)=Rational ? p.num(x)//p.den(x) : p.num(x)/p.den(x)
 # @btime inv(Frac.([q+1 q+2;q-2 q-3])) setup=(q=Pol())
 # 1.9.3 27.855 μs (673 allocations: 46.39 KiB)
+# 1.10.β3 23.769 μs (568 allocations: 33.12 KiB)
 end
