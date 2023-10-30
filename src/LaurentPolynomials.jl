@@ -237,9 +237,9 @@ Rational fractions are also scalars for broadcasting and can be sorted
 module LaurentPolynomials
 export degree, valuation, Pol, derivative, shift, positive_part, negative_part,
        bar, derivative, srgcd, Frac, @Pol, scalar, coefficients, root, randpol,
-       pseudodiv
+       pseudodiv, resultant, discriminant
 
-using LinearAlgebra:LinearAlgebra, exactdiv
+using LinearAlgebra:LinearAlgebra, exactdiv, det_bareiss
 const varname=Ref(:x)
 
 struct Pol{T}
@@ -807,6 +807,30 @@ function root(x::Pol,n::Union{Integer,Rational{<:Integer}}=2)
 end
 
 root(x::AbstractFloat,n=2)=x^(1/n)
+
+"""
+`resultant(p::Pol,q::Pol)`
+
+The  function  computes  the  resultant  of  the  two  polynomials,  as the
+determinant of the Sylvester matrix.
+```
+"""
+function resultant(p::Pol,q::Pol)
+  if iszero(p) || iszero(q) return zero(p) end
+  l=max(0,degree(p)+degree(q))
+  if degree(p)==degree(q)==0 return one(p[end]) end
+  m=fill(zero(p[end]),l,l)
+  for i in 1:degree(q) m[i,i:i+degree(p)]=p[end:-1:0] end
+  for i in 1:degree(p) m[i+degree(q),i:i+degree(q)]=q[end:-1:0] end
+  det_bareiss(m)
+end
+
+"""
+`discriminant(p::Pol)` the resultant of the polynomial with its derivative.
+This detects multiple zeroes.
+"""
+discriminant(p::Pol)=resultant(p,derivative(p))
+
 #---------------------- Frac-------------------------------------
 ## cannot use Rational{T} since it forces T<:Integer
 struct Frac{T}

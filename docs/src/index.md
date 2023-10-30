@@ -19,4 +19,6 @@ negative_part
 positive_part
 bar
 shift
+resultant
+discriminant
 ```
