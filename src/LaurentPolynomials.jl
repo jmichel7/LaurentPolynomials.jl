@@ -143,7 +143,7 @@ julia> p/2
 Pol{Float64}: 0.5q²+1.0q+0.5
 
 julia> p//2
-Pol{Rational{Int64}}: (1//2)q²+(1//1)q+1//2
+Pol{Rational{Int64}}: (1//2)q²+q+1//2
 
 julia> p(1//2) # value of p at 1//2
 9//4
@@ -151,8 +151,7 @@ julia> p(1//2) # value of p at 1//2
 julia> p(0.5)
 2.25
 
-# interpolation: find p taking values [2.0,1.0,3.0] at [1,2,3]
-julia> Pol([1,2,3],[2.0,1.0,3.0])  
+julia> Pol([1,2,3],[2.0,1.0,3.0])  # find p taking values [2.0,1.0,3.0] at [1,2,3]
 Pol{Float64}: 1.5q²-5.5q+6.0
 ```
 
@@ -227,8 +226,8 @@ julia> map(x->x(1),n) # evaluate at 1 the inverse matrix
 
 julia> map(x->x(1;Rational=true),n) # evaluate at 1 using //
 2×2 Matrix{Rational{Int64}}:
-  2//1   3//1
- -1//1  -2//1
+  2   3
+ -1  -2
 ```
 
 Rational fractions are also scalars for broadcasting and can be sorted
@@ -240,7 +239,7 @@ export degree, valuation, Pol, derivative, shift, positive_part, negative_part,
        pseudodiv, resultant, discriminant
 
 using LinearAlgebra:LinearAlgebra, exactdiv, det_bareiss
-const varname=Ref(:x)
+varname::Symbol=:x
 
 struct Pol{T}
   c::Vector{T}
@@ -285,7 +284,7 @@ Pol(a::T) where T<:Number=Pol_([a],0)
  the polynomial of degree 1 equal to that variable.
 """
 function Pol(t::Symbol)
-  varname[]=t
+  LaurentPolynomials.varname=t
   Pol()
 end
 
@@ -437,7 +436,7 @@ function Base.show(io::IO,p::Pol{T})where T
     end
   elseif iszero(p) print(io,"0")
   else
-    var=string(get(io,:varname,varname[]))
+    var=string(get(io,:varname,varname))
     for deg in degree(p):-1:valuation(p)
       c=p[deg]
       if iszero(c) continue end
@@ -681,7 +680,7 @@ julia> gcd(2q+2,2q^2-2)
 Pol{Int64}: 2q+2
 
 julia> gcd((2q+2)//1,(2q^2-2)//1)
-Pol{Rational{Int64}}: (1//1)q+1//1
+Pol{Rational{Int64}}: q+1
 ```
 """
 function Base.gcd(p::Pol,q::Pol)
@@ -704,7 +703,7 @@ for  polynomials  over  a  field  returns `d,u,v`  such  that `d=ua+vb` and
 
 ```julia-repl
 julia> gcdx(q^3-1//1,q^2-1//1)
-((1//1)q-1//1, 1//1, (-1//1)q)
+(q-1, 1, -q)
 ```
 """
 function Base.gcdx(a::Pol, b::Pol)
@@ -727,7 +726,7 @@ end
 `powermod(p::Pol, x::Integer, q::Pol)` computes ``p^x \\pmod m``.
 ```julia-repl
 julia> powermod(q-1//1,3,q^2+q+1)
-Pol{Rational{Int64}}: (6//1)q+3//1
+Pol{Rational{Int64}}: 6q+3
 ```
 """
 function Base.powermod(p::Pol, x::Integer, q::Pol)
@@ -774,7 +773,7 @@ julia> vals=p.(1:5)
  31
 
 julia> Pol(1:5,vals*1//1)
-Pol{Rational{Int64}}: (1//1)q²+(1//1)q+1//1
+Pol{Rational{Int64}}: q²+q+1
 
 julia> Pol(1:5,vals*1.0)
 Pol{Float64}: 1.0q²+1.0q+1.0
