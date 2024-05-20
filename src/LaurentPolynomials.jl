@@ -3,36 +3,36 @@ This  package  implements  univariate  Laurent  polynomials, and univariate
 rational  fractions. The  coefficients can  be in  any ring  (possibly even
 non-commutative, like `Matrix{Int}).
 
-The  initial  motivation  in  2018  was  to  have  an  easy way to port GAP
-polynomials  to  Julia.  The  reasons  for  still having my own package are
+The  initial  motivation  in  2018  was  to  have  an  easy way to port GAP polynomials  to  Julia.  The  reasons  for  still having my own package are
 multiple:
 
-  - I  need  my  polynomials  to  behave  well  when coefficients are in a
+  - I need my  polynomials to  behave  well  when the coefficients are in a
     ring,  in which  case I use pseudo-division and subresultant gcd.
   - I need my polynomials to  work as well as possible with coefficients of
     type  `T` where the elements  have a `zero` method  but `T` itself does
     not  have one, because `T` does  not contain the necessary information.
     An  example is modular arithmetic with  a `BigInt` modulus which cannot
     be  part of the  type. For this  reason the `zero`  polynomial does not
-    have  an empty list of coefficients,  but a list containing one element
+    have  an empty list of coefficients,  but a  list containing an element
     equal  to zero, so it is  always possible to get a  zero of type T from
     the zero polynomial.
   - `LaurentPolynomials` is designed to be used by `PuiseuxPolynomials`.
-  - In many cases, my polynomials are several times faster than those in
-    the package `Polynomials`. Also the interface is simple and flexible.
+  - Often  my polynomials  are several  times  faster  than  those  in  the
+    `Polynomials`  package.  In  addition,  the  interface  is  simple  and
+    flexible.
 
-The  only package on which this package depends is `LinearAlgebra`, through
-the use of the function `exactdiv`.
+The  only package this  package depends on  is `LinearAlgebra`, through the
+use of the `exactdiv` function.
 
-Laurent polynomials have the parametric type `Pol{T}`, where `T`is the type
-of   the  coefficients.  They  are  constructed   by  giving  a  vector  of
+Laurent  polynomials are of  the parametric type  `Pol{T}`, where `T`is the
+type  of  the  coefficients.  They  are  constructed  by giving a vector of
 coefficients  of  type  `T`,  and  a  valuation  (an  `Int`).  We call true
 polynomials those whose valuation is `≥0`.
 
 There  is  a  current  variable  name  (a  `Symbol`) which is used to print
 polynomials  nicely at  the repl  or in  IJulia or  Pluto. This name can be
-changed   globally,  or  just  for  printing  a  specific  polynomial.  But
-polynomials  do not record individually which symbol they should be printed
+changed  globally,  or  just  for  printing a specific polynomial. However,
+polynomials  do not individually record which symbol they should be printed
 with.
 
 # Examples
@@ -72,7 +72,8 @@ q+2+q^{-1}
 ```
 
 A  polynomial can be  taken apart with  the functions `valuation`, `degree`
-and `getindex`. An index `p[i]` gives the coefficient of degree `i` of `p`.
+and  `getindex`. An index  `p[i]` returns the  coefficient of degree `i` of
+`p`.
 
 ```julia-repl
 julia> valuation(p),degree(p)
@@ -100,8 +101,17 @@ julia> coefficients(p)  # the same again
  1
 ```
 
-A  polynomial  is  a  *scalar*  if  the  valuation  and degree are `0`. The
-function  `scalar` returns the constant coefficient  if the polynomial is a
+The coefficients can come from any ring:
+
+```julia-repl
+julia> h=Pol([[1 1;0 1],[1 0; 0 1]])
+Pol{Matrix{Int64}}: [1 0; 0 1]q+[1 1; 0 1]
+
+julia> h^3
+Pol{Matrix{Int64}}: [1 0; 0 1]q³+[3 3; 0 3]q²+[3 6; 0 3]q+[1 3; 0 1]
+```
+A  polynomial  is  a  *scalar*  if  its  valuation  and degree are `0`. The
+`scalar` function  returns the constant coefficient  if the polynomial is a
 scalar, and `nothing` otherwise.
 
 ```julia-repl
@@ -124,7 +134,7 @@ julia> scalar(q+1) # nothing; convert would give an error
 ```
 
 In arrays `Pol{T}` of different types `T` are promoted to the same type `T`
-(when  the `T`  involved have  a promotion)  and a  number is promoted to a
+(if  the  `T`  involved  have  a  promotion)  and a number is promoted to a
 polynomial.
 
 Usual  arithmetic (`+`, `-`,  `*`, `^`, `/`,  `//`, `one`, `isone`, `zero`,
@@ -191,10 +201,10 @@ polynomials.
 
 Inverting  polynomials is a way to  get a rational fraction `Frac{Pol{T}}`,
 where  `Frac`  is  a  general  type  for  fractions. Rational fractions are
-normalized so that the numerator and denominator are true polynomials prime
-to  each other. They  have the arithmetic  operations `+`, `-`  , `*`, `/`,
-`//`,  `^`,  `inv`,  `one`,  `isone`,  `zero`,  `iszero` (which can operate
-between a `Pol` or a `Number` and a `Frac{Pol{T}}`).
+normalised  so that the numerator and denominator are true polynomials that
+are  prime to each  other. They have  the arithmetic operations  `+`, `-` ,
+`*`,  `/`, `//`,  `^`, `inv`,  `one`, `isone`,  `zero`, `iszero` (which can
+operate between a `Pol` or a `Number` and a `Frac{Pol{T}}`).
 
 ```julia-repl
 julia> a=1/(q+1)
@@ -249,16 +259,16 @@ struct Pol{T}
 end
 
 """
-  `Pol(c::AbstractVector,v::Integer=0;check=true,copy=true)`
+`Pol(c::AbstractVector,v::Integer=0;check=true,copy=true)`
 
-  Make a polynomial of valuation `v` with coefficients `c`.
+Make a polynomial of valuation `v` with coefficients `c`.
 
-  Unless  `check` is `false`  normalize the result  by making sure that `c`
-  has  no leading or  trailing zeroes (do  not set `check=false` unless you
-  are sure this is already the case).
+Then,  unless `check` is  `false` normalize the  result by making sure that
+`c`  has no leading or trailing zeroes (do not set `check=false` unless you
+are sure this is already the case).
 
-  Unless  `copy=false` the  contents of  `c` are  copied (you  can gain one
-  allocation by setting `copy=false` if you know the contents can be shared)
+Unless  `copy=false`  the  contents  of  `c`  are  copied (you can gain one
+allocation by setting `copy=false` if you know the contents can be shared)
 """
 function Pol(c::AbstractVector{T},v::Integer=0;check=true,copy=true)where T
   if check # normalize c so there are no leading or trailing zeroes
@@ -278,10 +288,10 @@ Pol()=Pol_([1],1)
 Pol(a::T) where T<:Number=Pol_([a],0)
 
 """
- `Pol(t::Symbol)`
+`Pol(t::Symbol)`
 
- Sets the name of the variable for printing `Pol`s to `t`, and returns
- the polynomial of degree 1 equal to that variable.
+Sets  the name of the variable for  printing `Pol`s to `t`, and returns the
+polynomial of degree 1 equal to that variable.
 """
 function Pol(t::Symbol)
   LaurentPolynomials.varname=t
@@ -289,10 +299,10 @@ function Pol(t::Symbol)
 end
 
 """
- `@Pol q`
+`@Pol q`
 
- is equivalent to `q=Pol(:q)` excepted it creates `q` in the global scope of
- the current module, since it uses `eval`.
+is equivalent to `q=Pol(:q)` except that it creates `q` in the global scope
+of the current module, since it uses `eval`.
 """
 macro Pol(t)
   if !(t isa Symbol) error("usage: @Pol <variable name>") end
@@ -396,9 +406,9 @@ function Base.show(io::IO, ::MIME"text/plain", a::Pol)
   show(io,a)
 end
 
-# 3 next methods copied from Util.jl in order to have a self-contained file.
+# 3 next methods copied from Format.jl in order to have a self-contained file.
 
-# determines which coefficients should be bracketed for unambiguous display
+# determines when coefficients should be bracketed for unambiguous display
 function bracket_if_needed(c::String)
   if match(r"^[-+]?([^-+*/]|√-|{-)*(\(.*\))?$",c)!==nothing c
   else "("*c*")" 
@@ -535,9 +545,9 @@ derivative(a::Pol)=Pol([(i+a.v-1)*v for (i,v) in enumerate(a.c)],a.v-1,copy=fals
 """
 `divrem(a::Pol, b::Pol)`
 
-`a` and `b` should be true polynomials (nonnegative valuation).
-Computes  `(q,r)` such  that `a=q*b+r`  and `degree(r)<degree(b)`.
-Type stable if the coefficients of `b` are in a field.
+`a`  and `b`  should be  true polynomials  (have a  nonnegative valuation).
+Computes  `(q,r)` such that `a=q*b+r` and `degree(r)<degree(b)`. It is type
+stable if the coefficients of `b` are in a field.
 """
 function Base.divrem(a::Pol, b::Pol)
   if iszero(b) throw(DivideError) end
@@ -797,6 +807,7 @@ end
 
 Base.denominator(p::Pol)=lcm(denominator.(p.c))
 Base.numerator(p::Pol{<:Rational{T}}) where T=convert(Pol{T},p*denominator(p))
+Base.numerator(p::Pol{<:Integer})=p
 
 function root(x::Pol,n::Union{Integer,Rational{<:Integer}}=2)
   n=Int(n)
@@ -984,6 +995,8 @@ end
 function Base.promote_rule(a::Type{Frac{T1}},b::Type{Frac{T2}})where {T1<:Pol,T2<:Pol}
   Frac{promote_type(T1,T2)}
 end
+#@test (q+1)/(q-1)+q//1==(q^2+1)//(q-1)
+#@test q//1+(q+1)/(q-1)==(q^2+1)//(q-1)
 
 function Frac(a::Pol)
   if a.v>0 return Frac_(a,one(a)) end
