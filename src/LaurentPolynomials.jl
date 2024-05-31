@@ -908,12 +908,22 @@ Base.inv(a::Frac)=Frac_(a.den,a.num)
 Base.:^(a::Frac, n::Integer)= n>=0 ? Base.power_by_squaring(a,n) :
                               Base.power_by_squaring(inv(a),-n)
 Base.:+(a::Frac,b::Frac)=Frac(a.num*b.den+a.den*b.num,a.den*b.den)
+if VERSION.minor==11 && VERSION.prerelease==("beta2",)
+Base.:+(a::Frac{T},b::Union{Number,T}) where T=+(promote(a,b)...)
+Base.:+(b::Union{Number,T},a::Frac{T}) where T=+(promote(a,b)...)
+else
 Base.:+(a::Frac{<:T},b::Union{Number,T}) where T=+(promote(a,b)...)
 Base.:+(b::Union{Number,T},a::Frac{<:T}) where T=+(promote(a,b)...)
+end
 Base.:-(a::Frac)=Frac_(-a.num,a.den)
 Base.:-(a::Frac,b::Frac)=Frac(a.num*b.den-a.den*b.num,a.den*b.den)
+if VERSION.minor==11 && VERSION.prerelease==("beta2",)
+Base.:-(a::Frac{T},b::Union{Number,T}) where T=-(promote(a,b)...)
+Base.:-(b::Union{Number,T},a::Frac{T}) where T=-(promote(b,a)...)
+else
 Base.:-(a::Frac{<:T},b::Union{Number,T}) where T=-(promote(a,b)...)
 Base.:-(b::Union{Number,T},a::Frac{<:T}) where T=-(promote(b,a)...)
+end
 Base.:*(a::Frac,b::Frac)=Frac(a.num*b.num,a.den*b.den)
 Base.:*(a::Frac{<:T},b::T) where T=Frac(a.num*b,a.den)
 Base.:*(b::T,a::Frac{<:T}) where T=Frac(a.num*b,a.den)
