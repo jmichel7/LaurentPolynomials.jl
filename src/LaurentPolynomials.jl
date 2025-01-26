@@ -876,6 +876,7 @@ Base.abs(p::Frac)=p
 Base.conj(p::Frac)=Frac_(conj(p.num),conj(p.den))
 Base.adjoint(a::Frac)=conj(a)
 Base.:(==)(a::Frac,b::Frac)=a.num==b.num && a.den==b.den
+Base.:(==)(a::Frac,b)=a.num==numerator(b) && a.den==denominator(b)
 Base.cmp(a::Frac,b::Frac)=cmp((a.num,a.den),(b.num,b.den))
 Base.hash(a::Frac, h::UInt)=hash(a.num,hash(a.den,h))
 Base.isless(a::Frac,b::Frac)=cmp(a,b)==-1
