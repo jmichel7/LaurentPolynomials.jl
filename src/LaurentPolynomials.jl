@@ -389,6 +389,7 @@ Base.conj(p::Pol{T}) where T=Pol_(conj.(p.c),p.v)
 Base.abs(p::Pol)=p
 Base.adjoint(a::Pol)=conj(a)
 Base.transpose(a::Pol)=a
+Base.isfinite(a::Pol)=true
 
 ismonomial(p::Pol)=length(p.c)==1
 
