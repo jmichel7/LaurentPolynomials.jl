@@ -310,6 +310,11 @@ macro Pol(t)
 end
 
 Base.broadcastable(p::Pol)=Ref(p)
+Base.:*(a::AbstractArray,b::Pol)=a.*b
+Base.:*(a::Pol,b::AbstractArray)=a.*b
+Base.:*(a::Pol,b::Missing)=missing
+Base.:*(b::Missing,a::Pol)=missing
+
 Base.copy(p::Pol)=Pol_(copy(p.c),p.v)
 
 degree(a::Number)=0 # convenient
@@ -864,6 +869,10 @@ end
 (::Type{Frac{T}})(a::Number) where T=convert(Frac{T},a)
 
 Base.broadcastable(p::Frac)=Ref(p)
+Base.:*(a::AbstractArray,b::Frac)=a.*b
+Base.:*(a::Frac,b::AbstractArray)=a.*b
+Base.:*(a::Frac,b::Missing)=missing
+Base.:*(b::Missing,a::Frac)=missing
 
 Base.copy(a::Frac)=Frac_(a.num,a.den)
 Base.one(a::Frac)=Frac_(one(a.num),one(a.den))
