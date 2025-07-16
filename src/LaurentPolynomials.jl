@@ -887,9 +887,10 @@ Base.conj(p::Frac)=Frac_(conj(p.num),conj(p.den))
 Base.adjoint(a::Frac)=conj(a)
 Base.:(==)(a::Frac,b::Frac)=a.num==b.num && a.den==b.den
 function Base.:(==)(a::Frac,b)
-  if hasmethod(numerator,typeof(b)) && hasmethod(denominator,typeof(b))
+ if hasmethod(numerator,Tuple{typeof(b)}) && 
+    hasmethod(denominator,Tuple{typeof(b)})
     a.num==numerator(b) && a.den==denominator(b)
-  else false end
+ else false end
 end
 Base.cmp(a::Frac,b::Frac)=cmp((a.num,a.den),(b.num,b.den))
 Base.hash(a::Frac, h::UInt)=hash(a.num,hash(a.den,h))
