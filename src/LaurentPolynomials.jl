@@ -421,10 +421,10 @@ function bracket_if_needed(c::String)
   end
 end
 
-function format_coefficient(c::String)
+function format_coefficient(c::String;prod=false)
   if c=="1" ""
   elseif c=="-1" "-"
-  else bracket_if_needed(c)
+  else bracket_if_needed(c)*(prod ? "*" : "")
   end
 end
 
@@ -444,7 +444,7 @@ function stringexp(io::IO,n::Integer)
 end
 
 function Base.show(io::IO,p::Pol{T})where T
-  if !get(io,:limit,false) && !get(io,:TeX,false)
+  if !get(io,:limit,false) && !get(io,:TeX,false) && !get(io,:naive,false)
     if ismonomial(p) && isone(p.c[1]) && p.v==1 && T==Int print(io,"Pol()")
     else print(io,"Pol(",p.c)
       if !iszero(p.v) print(io,",",p.v) end
@@ -458,7 +458,10 @@ function Base.show(io::IO,p::Pol{T})where T
       if iszero(c) continue end
       c=repr(c; context=IOContext(io,:typeinfo=>typeof(c)))
       if !iszero(deg)
-        c=format_coefficient(c)*var*stringexp(io,deg)
+        c=format_coefficient(c,prod=get(io,:prod,false))*var
+        if get(io,:naive,false) c*=stringexp(stdout,deg)
+        else c*=stringexp(io,deg)
+        end
       end
       if c[1]!='-' && deg!=degree(p) c="+"*c end
       print(io,c)
