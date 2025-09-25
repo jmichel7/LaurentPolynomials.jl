@@ -890,8 +890,7 @@ Base.conj(p::Frac)=Frac_(conj(p.num),conj(p.den))
 Base.adjoint(a::Frac)=conj(a)
 Base.:(==)(a::Frac,b::Frac)=a.num==b.num && a.den==b.den
 function Base.:(==)(a::Frac,b)
- if hasmethod(numerator,Tuple{typeof(b)}) && 
-    hasmethod(denominator,Tuple{typeof(b)})
+ if applicable(numerator,b) && applicable(denominator,b)
     a.num==numerator(b) && a.den==denominator(b)
  else false end
 end
