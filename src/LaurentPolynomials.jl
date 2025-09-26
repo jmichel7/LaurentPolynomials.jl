@@ -863,6 +863,8 @@ Base.numerator(a::Frac)=a.num
 Base.denominator(a::Frac)=a.den
 Base.isfinite(x::Frac)=true
 
+root(f::Frac,n=2)=root(numerator(f),n)//root(denominator(f),n)
+
 function Base.convert(::Type{Frac{T}},p::Frac{T1}) where {T,T1}
   Frac_(convert(T,p.num),convert(T,p.den))
 end
