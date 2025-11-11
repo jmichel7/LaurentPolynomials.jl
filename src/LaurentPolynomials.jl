@@ -1,7 +1,7 @@
 """
 This  package  implements  univariate  Laurent  polynomials, and univariate
 rational  fractions. The  coefficients can  be in  any ring  (possibly even
-non-commutative, like `Matrix{Int}).
+non-commutative, like `Matrix{Int}`).
 
 The  initial  motivation  in  2018  was  to  have  an  easy way to port GAP polynomials  to  Julia.  The  reasons  for  still having my own package are
 multiple:
@@ -24,7 +24,7 @@ multiple:
 The  only package this  package depends on  is `LinearAlgebra`, through the
 use of the `exactdiv` function.
 
-Laurent  polynomials are of  the parametric type  `Pol{T}`, where `T`is the
+Laurent  polynomials are of the parametric  type `Pol{T}`, where `T` is the
 type  of  the  coefficients.  They  are  constructed  by giving a vector of
 coefficients  of  type  `T`,  and  a  valuation  (an  `Int`).  We call true
 polynomials those whose valuation is `≥0`.
@@ -161,7 +161,7 @@ julia> p(1//2) # value of p at 1//2
 julia> p(0.5)
 2.25
 
-julia> Pol([1,2,3],[2.0,1.0,3.0])  # find p taking values [2.0,1.0,3.0] at [1,2,3]
+julia> Pol([1,2,3],[2.0,1.0,3.0])  # Interpolation: find p taking values [2.0,1.0,3.0] at [1,2,3]
 Pol{Float64}: 1.5q²-5.5q+6.0
 ```
 
@@ -169,11 +169,12 @@ Polynomials  are scalars  for broadcasting.  They can  be sorted (they have
 `cmp`   and  `isless`  functions  which   compare  the  valuation  and  the
 coefficients), they can be keys in a `Dict` (they have a `hash` function).
 
-The  functions  `divrem`,  `div`,  `%`,  `gcd`,  `gcdx`,  `lcm`, `powermod`
-operate  between  true  polynomials  over  a  field,  using  the polynomial
-division.  Over a ring it is better  to use `pseudodiv` and `srgcd` instead
-of  `divrem`  and  `gcd`  (by  default  `gcd`  between  integer polynomials
-delegates to `srgcd`).
+The  functions [`divrem`](@ref), `div`, `%`, [`gcd`](@ref), [`gcdx`](@ref),
+`lcm`,  [`powermod`](@ref) operate between true polynomials over a field, using the
+polynomial  division. Over a  ring it is  better to use [`pseudodiv`](@ref)
+and  [`srgcd`](@ref)  instead  of  [`divrem`](@ref)  and  [`gcd`](@ref) (by
+default    [`gcd`](@ref)   between   integer   polynomials   delegates   to
+[`srgcd`](@ref)).
 
 `LinearAlgebra.exactdiv`  does division (over a field or a ring) when it is
 exact, otherwise gives an error.
@@ -191,13 +192,15 @@ julia> pseudodiv(q^3+1,2q+1) # pseudo-division keeps the ring
 julia> (4q^2-2q+1)*(2q+1)+7 # but multiplying back gives a multiple of the polynomial
 Pol{Int64}: 8q³+8
 
-julia> LinearAlgebra.exactdiv(q+1,2.0) # LinearAlgebra.exactdiv(q+1,2) would give an error
+julia> LinearAlgebra.exactdiv(q+1,2.0) # LinearAlgebra.exactdiv(q+1,Pol(2)) would give an error
 Pol{Float64}: 0.5q+0.5
 ```
 Finally,   `Pol`s  have   methods  `conj`,   `adjoint`  which   operate  on
-coefficients,  methods `positive_part`,  `negative_part` and  `bar` (useful
-for  Kazhdan-Lusztig  theory)  and  a  method  `randpol`  to produce random
-polynomials.
+coefficients,  methods [`positive_part`](@ref), [`negative_part`](@ref) and
+[`bar`](@ref)   (useful   for   Kazhdan-Lusztig   theory)   and   a  method
+[`randpol`](@ref)  to produce random polynomials. There are also methods to
+compute the [`resultant`](@ref) of two polynomials and the
+[`discriminant`](@ref) of a polynomial.
 
 Inverting  polynomials is a way to  get a rational fraction `Frac{Pol{T}}`,
 where  `Frac`  is  a  general  type  for  fractions. Rational fractions are
@@ -641,12 +644,10 @@ end
 `srgcd(a::Pol,b::Pol)`
 
 sub-resultant gcd: gcd of polynomials over a unique factorization domain
-
 ```julia-repl
 julia> srgcd(4q+4,6q^2-6)
 Pol{Int64}: 2q+2
 ```
-
 See Knuth AOCP2 4.6.1 Algorithm C
 """
 function srgcd(a::Pol,b::Pol)
@@ -768,7 +769,11 @@ end
 """
 `randpol(T,d)`
 
-random polynomial of degree `d` with coefficients from `T`
+polynomial of degree `d` with random coefficients from `T`
+```julia-repl
+julia> randpol(-1:1,7)
+Pol{Int64}: -q⁷+q⁶-q⁵-q⁴+q²+1
+```
 """
 randpol(T,d::Integer)=Pol(rand(T,d+1))
 
@@ -832,6 +837,9 @@ root(x::AbstractFloat,n=2)=x^(1/n)
 
 The  function  computes  the  resultant  of  the  two  polynomials,  as the
 determinant of the Sylvester matrix.
+```julia-repl
+julia> resultant(q^3+q+1,derivative(q^3+q+1))
+31
 ```
 """
 function resultant(p::Pol,q::Pol)
@@ -845,8 +853,14 @@ function resultant(p::Pol,q::Pol)
 end
 
 """
-`discriminant(p::Pol)` the resultant of the polynomial with its derivative.
-This detects multiple zeroes.
+`discriminant(p::Pol)` 
+
+is  the  resultant  of  the  polynomial  with  its derivative. This detects
+multiple zeroes.
+```julia-repl
+julia> discriminant(q^3+q+1)
+31
+```
 """
 discriminant(p::Pol)=resultant(p,derivative(p))
 
@@ -963,10 +977,16 @@ Frac(a::Pol,b::Pol;prime=false)=Frac(promote(a,b)...;prime)
 """
 `Frac(a::Pol,b::Pol;prime=false)
 
+Makes  the  rational  fraction  with  numerator  `a`  and  denominator `b`.
 Polynomials  `a` and `b` are promoted to same coefficient type, and checked
 for  being true polynomials (otherwise they are both multiplied by the same
 power  of  the  variable  so  they  become  true  polynomials),  and unless
 `prime=true` they are checked for having a non-trivial `gcd`.
+
+```julia-repl
+julia> Frac(q^2+q,q^3-q)
+Frac{Pol{Int64}}: 1/(q-1)
+```
 """
 function Frac(a::T,b::T;prime=false)::Frac{T} where T<:Pol
   if iszero(b) error("division by 0") end
@@ -1063,6 +1083,7 @@ end
 
 (p::Frac{<:Pol})(x;Rational=false)=Rational ? p.num(x)//p.den(x) : p.num(x)/p.den(x)
 # @btime inv(Frac.([q+1 q+2;q-2 q-3])) setup=(q=Pol())
-# 1.9.3 27.855 μs (673 allocations: 46.39 KiB)
+# 1.9.3   27.855 μs (673 allocations: 46.39 KiB)
 # 1.10.β3 23.769 μs (568 allocations: 33.12 KiB)
+# 1.11.7  17.459 μs (813 allocations: 28.84 KiB)
 end

@@ -7,7 +7,8 @@ function mytest(file::String,cmd::String,man::String)
   exec=replace(exec,r"\s*$"m=>""); exec=replace(exec,r"\s*$"s=>"")
   exec=replace(exec,r"^\s*"=>"")
   if exec==man return true end
-  i=findfirst(i->i<=lastindex(man) && exec[i]!=man[i],collect(eachindex(exec)))
+  inds=collect(eachindex(exec))
+  i=inds[findfirst(i->i<=lastindex(man) && exec[i]!=man[i],inds)]
   print("exec=$(repr(exec[i:end]))\nmanl=$(repr(man[i:end]))\n")
   false
 end
@@ -59,10 +60,14 @@ end
 @test mytest("LaurentPolynomials.jl","gcd((2q+2)//1,(2q^2-2)//1)","Pol{Rational{Int64}}: q+1")
 @test mytest("LaurentPolynomials.jl","gcdx(q^3-1//1,q^2-1//1)","(q-1, 1, -q)")
 @test mytest("LaurentPolynomials.jl","powermod(q-1//1,3,q^2+q+1)","Pol{Rational{Int64}}: 6q+3")
+@test mytest("LaurentPolynomials.jl","randpol(-1:1,7)","Pol{Int64}: -q⁷+q⁶-q⁵-q⁴+q²+1")
 @test mytest("LaurentPolynomials.jl","p=Pol([1,1,1])","Pol{Int64}: q²+q+1")
 @test mytest("LaurentPolynomials.jl","vals=p.(1:5)","5-element Vector{Int64}:\n  3\n  7\n 13\n 21\n 31")
 @test mytest("LaurentPolynomials.jl","Pol(1:5,vals*1//1)","Pol{Rational{Int64}}: q²+q+1")
 @test mytest("LaurentPolynomials.jl","Pol(1:5,vals*1.0)","Pol{Float64}: 1.0q²+1.0q+1.0")
+@test mytest("LaurentPolynomials.jl","resultant(q^3+q+1,derivative(q^3+q+1))","31")
+@test mytest("LaurentPolynomials.jl","discriminant(q^3+q+1)","31")
+@test mytest("LaurentPolynomials.jl","Frac(q^2+q,q^3-q)","Frac{Pol{Int64}}: 1/(q-1)")
 @test (q+1)/(q-1)+q//1==(q^2+1)//(q-1)
 @test q//1+(q+1)/(q-1)==(q^2+1)//(q-1)
 end

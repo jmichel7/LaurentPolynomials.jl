@@ -1,7 +1,8 @@
-# Laurent polynomials
-```@contents
-Depth=3
+```@meta
+CurrentModule=LaurentPolynomials
 ```
+# Laurent polynomials
+Documentation for [LaurentPolynomials](https://github.com/jmichel7/LaurentPolynomials.jl).
 
 ```@docs
 LaurentPolynomials
