@@ -3,7 +3,8 @@ This  package  implements  univariate  Laurent  polynomials, and univariate
 rational  fractions. The  coefficients can  be in  any ring  (possibly even
 non-commutative, like `Matrix{Int}`).
 
-The  initial  motivation  in  2018  was  to  have  an  easy way to port GAP polynomials  to  Julia.  The  reasons  for  still having my own package are
+The  initial  motivation  in  2018  was  to  have  an  easy way to port GAP
+polynomials  to  Julia.  The  reasons  for  still having my own package are
 multiple:
 
   - I need my  polynomials to  behave  well  when the coefficients are in a
@@ -16,37 +17,37 @@ multiple:
     have  an empty list of coefficients,  but a  list containing an element
     equal  to zero, so it is  always possible to get a  zero of type T from
     the zero polynomial.
-  - `LaurentPolynomials` is designed to be used by `PuiseuxPolynomials`.
   - Often  my polynomials  are several  times  faster  than  those  in  the
     `Polynomials`  package.  In  addition,  the  interface  is  simple  and
     flexible.
+  - finally, `LaurentPolynomials` is designed to work with `PuiseuxPolynomials`.
 
 The  only package this  package depends on  is `LinearAlgebra`, through the
 use of the `exactdiv` function.
 
 Laurent  polynomials are of the parametric  type `Pol{T}`, where `T` is the
 type  of  the  coefficients.  They  are  constructed  by giving a vector of
-coefficients  of  type  `T`,  and  a  valuation  (an  `Int`).  We call true
-polynomials those whose valuation is `≥0`.
+coefficients  of type `T`, and a valuation, an `Int`; see [`Pol`](@ref). We
+call true polynomials those whose valuation is `≥0`.
 
-There  is  a  current  variable  name  (a  `Symbol`) which is used to print
-polynomials  nicely at  the repl  or in  IJulia or  Pluto. This name can be
-changed  globally,  or  just  for  printing a specific polynomial. However,
-polynomials  do not individually record which symbol they should be printed
-with.
+There  is  a  "current  variable  name"  (a  `Symbol`)  which  is used when
+printiing  polynomials nicely at the repl or  in IJulia or Pluto. This name
+can  be  changed  globally,  or  just  for  printing a specific polynomial.
+However, polynomials do not individually record which symbol they should be
+printed with.
 
 # Examples
 ```julia-repl
-julia> Pol(:q) # define symbol used for printing and return Pol([1],1)
+julia> Pol(:q) # define the symbol used for printing and return Pol([1],1)
 Pol{Int64}: q
 
-julia> @Pol q  # same as q=Pol(:q)  useful to start session with polynomials
+julia> @Pol q  # same as q=Pol(:q)  useful to start a session with polynomials
 Pol{Int64}: q
 
-julia> Pol([1,2]) # valuation is taken to be 0 if omitted
+julia> Pol([1,2]) # the valuation is taken to be 0 if omitted
 Pol{Int64}: 2q+1
 
-julia> 2q+1       # same polynomial
+julia> 2q+1       # the same polynomial
 Pol{Int64}: 2q+1
 
 julia> Pol()   # omitting all arguments gives Pol([1],1)
@@ -55,15 +56,15 @@ Pol{Int64}: q
 julia> p=Pol([1,2,1],-1) # here the valuation is specified to be -1
 Pol{Int64}: q+2+q⁻¹
 
-julia> q+2+q^-1 # same polynomial
+julia> q+2+q^-1 # the same polynomial
 Pol{Int64}: q+2+q⁻¹
 ```
 
 ```julia-rep1
-julia> print(p) # if not nice printing give an output which can be read back
+julia> print(p) # for basic printing give an output which Julia can read
 Pol([1, 2, 1],-1)
 
-# change the variable for printing just this time
+# change the variable used for printing just this time
 julia> print(IOContext(stdout,:limit=>true,:varname=>"x"),p)
 x+2+x⁻¹
 
@@ -72,8 +73,7 @@ q+2+q^{-1}
 ```
 
 A  polynomial can be  taken apart with  the functions `valuation`, `degree`
-and  `getindex`. An index  `p[i]` returns the  coefficient of degree `i` of
-`p`.
+and `getindex`; `p[i]` returns the coefficient of degree `i` of `p`.
 
 ```julia-repl
 julia> valuation(p),degree(p)
@@ -101,7 +101,7 @@ julia> coefficients(p)  # the same again
  1
 ```
 
-The coefficients can come from any ring:
+The coefficients of a polynomial can come from any ring:
 
 ```julia-repl
 julia> h=Pol([[1 1;0 1],[1 0; 0 1]])
@@ -110,17 +110,19 @@ Pol{Matrix{Int64}}: [1 0; 0 1]q+[1 1; 0 1]
 julia> h^3
 Pol{Matrix{Int64}}: [1 0; 0 1]q³+[3 3; 0 3]q²+[3 6; 0 3]q+[1 3; 0 1]
 ```
+
+```julia-repl
+julia> Pol(1) # convert a number to a scalar polynomial
+Pol{Int64}: 1
+
+julia> convert(Pol{Int},1) # the same thing
+Pol{Int64}: 1
+```
 A  polynomial  is  a  *scalar*  if  its  valuation  and degree are `0`. The
 `scalar` function  returns the constant coefficient  if the polynomial is a
 scalar, and `nothing` otherwise.
 
 ```julia-repl
-julia> Pol(1)
-Pol{Int64}: 1
-
-julia> convert(Pol{Int},1) # the same thing
-Pol{Int64}: 1
-
 julia> scalar(Pol(1))
 1
 
@@ -138,7 +140,7 @@ In arrays `Pol{T}` of different types `T` are promoted to the same type `T`
 polynomial.
 
 Usual  arithmetic (`+`, `-`,  `*`, `^`, `/`,  `//`, `one`, `isone`, `zero`,
-`iszero`,  `==`) works. Elements  of type `<:Number`  or of type  `T` for a
+`iszero`,  `==`) works. Objects  of type `<:Number`  or of type  `T` for a
 `Pol{T}`   are  considered  as   scalars  for  scalar   operations  on  the
 coefficients.
 
@@ -170,11 +172,11 @@ Polynomials  are scalars  for broadcasting.  They can  be sorted (they have
 coefficients), they can be keys in a `Dict` (they have a `hash` function).
 
 The  functions [`divrem`](@ref), `div`, `%`, [`gcd`](@ref), [`gcdx`](@ref),
-`lcm`,  [`powermod`](@ref) operate between true polynomials over a field, using the
-polynomial  division. Over a  ring it is  better to use [`pseudodiv`](@ref)
-and  [`srgcd`](@ref)  instead  of  [`divrem`](@ref)  and  [`gcd`](@ref) (by
-default    [`gcd`](@ref)   between   integer   polynomials   delegates   to
-[`srgcd`](@ref)).
+`lcm`,  [`powermod`](@ref) operate  between true  polynomials over a field,
+using   the  polynomial  division.  Over  a   ring  it  is  better  to  use
+[`pseudodiv`](@ref)  and  [`srgcd`](@ref)  instead  of [`divrem`](@ref) and
+[`gcd`](@ref)   (by  default  [`gcd`](@ref)   between  integer  polynomials
+delegates to [`srgcd`](@ref)).
 
 `LinearAlgebra.exactdiv`  does division (over a field or a ring) when it is
 exact, otherwise gives an error.
@@ -194,6 +196,21 @@ Pol{Int64}: 8q³+8
 
 julia> LinearAlgebra.exactdiv(q+1,2.0) # LinearAlgebra.exactdiv(q+1,Pol(2)) would give an error
 Pol{Float64}: 0.5q+0.5
+
+julia> LinearAlgebra.exactdiv(q^2-1,q+1)
+Pol{Int64}: q-1
+```
+
+```julia-rep1
+julia> LinearAlgebra.exactdiv(q-1,q+1)
+ERROR: Pol([1, 1]) does not exactly divide Pol([-1, 1])
+Stacktrace:
+ [1] error(::Pol{Int64}, ::String, ::Pol{Int64})
+   @ Base ./error.jl:44
+ [2] exactdiv(a::Pol{Int64}, b::Pol{Int64})
+   @ LaurentPolynomials ~/.julia/dev/LaurentPolynomials/src/LaurentPolynomials.jl:600
+ [3] top-level scope
+   @ REPL[14]:1
 ```
 Finally,   `Pol`s  have   methods  `conj`,   `adjoint`  which   operate  on
 coefficients,  methods [`positive_part`](@ref), [`negative_part`](@ref) and
@@ -294,7 +311,7 @@ Pol(a::T) where T<:Number=Pol_([a],0)
 `Pol(t::Symbol)`
 
 Sets  the name of the variable for  printing `Pol`s to `t`, and returns the
-polynomial of degree 1 equal to that variable.
+polynomial `Pol([1],1)`.
 """
 function Pol(t::Symbol)
   LaurentPolynomials.varname=t
@@ -368,7 +385,7 @@ Base.hash(a::Pol, h::UInt)=hash(a.v,hash(a.c,h))
 
 """
 `shift(p::Pol,s)`
-efficient way to multiply a polynomial by `Pol()^s`.
+is an efficient way to multiply `p` by `Pol()^s`.
 """
 shift(p::Pol{T},s) where T=Pol_(p.c,p.v+s)
 
@@ -378,7 +395,6 @@ positive_part(p::Pol)=p.v>=0 ? copy(p) : Pol(view(p.c,1-p.v:length(p.c)),0)
 "`negative_part(p::Pol)` keep the terms of degree≤0"
 negative_part(p::Pol)=degree(p)<=0 ? copy(p) : Pol(view(p.c,1:1-p.v),p.v)
 
-# q↦ q⁻¹ on p
 "`bar(p::Pol)` transform p(q) into p(q⁻¹)"
 bar(p::Pol)=Pol_(reverse(p.c),-degree(p))
 
@@ -978,11 +994,10 @@ Frac(a::Pol,b::Pol;prime=false)=Frac(promote(a,b)...;prime)
 `Frac(a::Pol,b::Pol;prime=false)
 
 Makes  the  rational  fraction  with  numerator  `a`  and  denominator `b`.
-Polynomials  `a` and `b` are promoted to same coefficient type, and checked
-for  being true polynomials (otherwise they are both multiplied by the same
-power  of  the  variable  so  they  become  true  polynomials),  and unless
-`prime=true` they are checked for having a non-trivial `gcd`.
-
+Polynomials  `a` and  `b` are  promoted to  the same  coefficient type, and
+checked  for being true polynomials (otherwise  they are both multiplied by
+the  same power  of `Pol()`  so they  become true  polynomials), and unless
+`prime=true` they are both divided by a non-trivial common `gcd`.
 ```julia-repl
 julia> Frac(q^2+q,q^3-q)
 Frac{Pol{Int64}}: 1/(q-1)

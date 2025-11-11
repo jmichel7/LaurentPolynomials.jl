@@ -45,6 +45,7 @@ end
 @test mytest("LaurentPolynomials.jl","pseudodiv(q^3+1,2q+1)","(4q²-2q+1, 7)")
 @test mytest("LaurentPolynomials.jl","(4q^2-2q+1)*(2q+1)+7","Pol{Int64}: 8q³+8")
 @test mytest("LaurentPolynomials.jl","LinearAlgebra.exactdiv(q+1,2.0)","Pol{Float64}: 0.5q+0.5")
+@test mytest("LaurentPolynomials.jl","LinearAlgebra.exactdiv(q^2-1,q+1)","Pol{Int64}: q-1")
 @test mytest("LaurentPolynomials.jl","a=1/(q+1)","Frac{Pol{Int64}}: 1/(q+1)")
 @test mytest("LaurentPolynomials.jl","Pol(2/a)","Pol{Int64}: 2q+2")
 @test mytest("LaurentPolynomials.jl","numerator(a)","Pol{Int64}: 1")
