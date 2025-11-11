@@ -770,7 +770,7 @@ end
 `randpol(T,d)`
 
 polynomial of degree `d` with random coefficients from `T`
-```julia-repl
+```julia-rep1
 julia> randpol(-1:1,7)
 Pol{Int64}: -q⁷+q⁶-q⁵-q⁴+q²+1
 ```
