@@ -499,10 +499,11 @@ function Base.:*(a::Pol{T1},b::Pol{T2})where {T1,T2}
   Pol_(res,a.v+b.v)
 end
 
-Base.:*(a::Pol, b::Number)=Pol(a.c.*Ref(b),a.v)
-Base.:*(a::Pol{T}, b::T) where T=Pol(a.c.*Ref(b),a.v;copy=false)
-Base.:*(b::Number, a::Pol)=Pol(Ref(b).*a.c,a.v)
-Base.:*(b::T, a::Pol{T}) where T=Pol(Ref(b).*a.c,a.v;copy=false)
+scalarmult(a::Pol,b)=Pol(a.c.*Ref(b),a.v;copy=false)
+Base.:*(a::Pol, b::Number)=scalarmult(a,b)
+Base.:*(a::Pol{T}, b::T) where T=scalarmult(a,b)
+Base.:*(b::Number, a::Pol)=scalarmult(a,b)
+Base.:*(b::T, a::Pol{T}) where T=scalarmult(a,b)
 
 Base.:^(a::Pol, n::Real)=isinteger(n) ? a^Int(n) : root(a,1//n)
 
@@ -728,7 +729,7 @@ function Base.gcd(p::Pol,q::Pol)
     q=q/q.c[end]
     (q,p)=(divrem(p,q)[2],q)
   end
-  p*inv(p.c[end])
+  scalarmult(p,inv(p.c[end]))
 end
 
 """
