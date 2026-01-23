@@ -269,6 +269,7 @@ export degree, valuation, Pol, derivative, shift, positive_part, negative_part,
        pseudodiv, resultant, discriminant
 
 using LinearAlgebra:LinearAlgebra, exactdiv, det_bareiss
+using LaTeXStrings
 varname::Symbol=:x
 
 struct Pol{T}
@@ -418,9 +419,7 @@ Base.isfinite(a::Pol)=true
 ismonomial(p::Pol)=length(p.c)==1
 
 function Base.show(io::IO, ::MIME"text/html", a::Pol)
-  print(io, "\$")
-  show(IOContext(io,:TeX=>true),a)
-  print(io, "\$")
+  print(io,latexstring(repr(a,context=IOContext(io,:TeX=>true))))
 end
 
 function Base.show(io::IO, ::MIME"text/plain", a::Pol)

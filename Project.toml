@@ -4,9 +4,11 @@ authors = ["Jean Michel <jean.michel@imj-prg.fr>"]
 version = "0.1.6"
 
 [deps]
+LaTeXStrings= "b964fa9f-0449-5b57-a5c2-d3ea65f4040f"
 LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
 
 [compat]
+LaTeXStrings= "1.4"
 LinearAlgebra = "1"
 Test = "1.6"
 julia = "1.9"
