@@ -262,6 +262,12 @@ julia> map(x->x(1;Rational=true),n) # evaluate at 1 using //
 
 Rational fractions are also scalars for broadcasting and can be sorted
 (have `cmp` and `isless` methods).
+
+Finally, we have nice display in Pluto and IJulia:
+```julia-repl
+julia> repr(MIME("text/latex"),a)
+"\$\\displaystyle{\\frac{1}{q+1}}\$"
+```
 """
 module LaurentPolynomials
 export degree, valuation, Pol, derivative, shift, positive_part, negative_part,
@@ -418,7 +424,7 @@ Base.isfinite(a::Pol)=true
 
 ismonomial(p::Pol)=length(p.c)==1
 
-function Base.show(io::IO, ::MIME"text/html", a::Pol)
+function Base.show(io::IO, ::MIME"text/latex", a::Pol)
   print(io,latexstring(repr(a,context=IOContext(io,:TeX=>true))))
 end
 
@@ -930,6 +936,10 @@ Base.cmp(a::Frac,b::Frac)=cmp((a.num,a.den),(b.num,b.den))
 Base.hash(a::Frac, h::UInt)=hash(a.num,hash(a.den,h))
 Base.isless(a::Frac,b::Frac)=cmp(a,b)==-1
 
+function Base.show(io::IO, ::MIME"text/latex", a::Frac)
+  print(io,latexstring(repr(a,context=IOContext(io,:TeX=>true))))
+end
+
 function Base.show(io::IO, ::MIME"text/plain", a::Frac)
   if !haskey(io,:typeinfo) 
     print(io,typeof(a),": ") 
@@ -940,17 +950,21 @@ end
 
 function Base.show(io::IO,a::Frac)
   if !get(io, :limit, false) && !get(io, :TeX, false)
-    print(io,"Frac(",a.num,",",a.den,")")
+    print(io,"frac(",a.num,",",a.den,")")
     return
   end
   if haskey(io,:typeinfo) && isone(a.den) 
     print(io,a.num)
     return 
   end
-  n=sprint(show,a.num; context=io)
-  print(io,bracket_if_needed(n))
-  n=sprint(show,a.den; context=io)
-  print(io,"/",bracket_if_needed(n))
+  if get(io,:TeX,false)
+    print(io,"\\displaystyle{\\frac{",a.num,"}{",a.den,"}}")
+  else
+    n=sprint(show,a.num; context=io)
+    print(io,bracket_if_needed(n))
+    n=sprint(show,a.den; context=io)
+    print(io,"/",bracket_if_needed(n))
+ end
 end
 
 Base.inv(a::Frac)=Frac_(a.den,a.num)
@@ -958,22 +972,12 @@ Base.inv(a::Frac)=Frac_(a.den,a.num)
 Base.:^(a::Frac, n::Integer)= n>=0 ? Base.power_by_squaring(a,n) :
                               Base.power_by_squaring(inv(a),-n)
 Base.:+(a::Frac,b::Frac)=Frac(a.num*b.den+a.den*b.num,a.den*b.den)
-if VERSION.minor==11 && VERSION.prerelease==("beta2",)
-Base.:+(a::Frac{T},b::Union{Number,T}) where T=+(promote(a,b)...)
-Base.:+(b::Union{Number,T},a::Frac{T}) where T=+(promote(a,b)...)
-else
 Base.:+(a::Frac{<:T},b::Union{Number,T}) where T=+(promote(a,b)...)
 Base.:+(b::Union{Number,T},a::Frac{<:T}) where T=+(promote(a,b)...)
-end
 Base.:-(a::Frac)=Frac_(-a.num,a.den)
 Base.:-(a::Frac,b::Frac)=Frac(a.num*b.den-a.den*b.num,a.den*b.den)
-if VERSION.minor==11 && VERSION.prerelease==("beta2",)
-Base.:-(a::Frac{T},b::Union{Number,T}) where T=-(promote(a,b)...)
-Base.:-(b::Union{Number,T},a::Frac{T}) where T=-(promote(b,a)...)
-else
 Base.:-(a::Frac{<:T},b::Union{Number,T}) where T=-(promote(a,b)...)
 Base.:-(b::Union{Number,T},a::Frac{<:T}) where T=-(promote(b,a)...)
-end
 Base.:*(a::Frac,b::Frac)=Frac(a.num*b.num,a.den*b.den)
 Base.:*(a::Frac{<:T},b::T) where T=Frac(a.num*b,a.den)
 Base.:*(b::T,a::Frac{<:T}) where T=Frac(a.num*b,a.den)
