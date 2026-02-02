@@ -979,8 +979,8 @@ Base.:-(a::Frac,b::Frac)=Frac(a.num*b.den-a.den*b.num,a.den*b.den)
 Base.:-(a::Frac{<:T},b::Union{Number,T}) where T=-(promote(a,b)...)
 Base.:-(b::Union{Number,T},a::Frac{<:T}) where T=-(promote(b,a)...)
 Base.:*(a::Frac,b::Frac)=Frac(a.num*b.num,a.den*b.den)
-Base.:*(a::Frac{<:T},b::T) where T=Frac(a.num*b,a.den)
-Base.:*(b::T,a::Frac{<:T}) where T=Frac(a.num*b,a.den)
+Base.:*(a::Frac{<:Pol},b::Pol)=Frac(a.num*b,a.den)
+Base.:*(b::Pol,a::Frac{<:Pol})=Frac(a.num*b,a.den)
 Base.:*(a::Frac{<:Pol},b::Number)=Frac(a.num*b,a.den;prime=true)
 Base.:*(b::Number,a::Frac{<:Pol})=a*b
 
