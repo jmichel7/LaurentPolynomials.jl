@@ -270,11 +270,11 @@ julia> repr(MIME("text/latex"),a)
 ```
 """
 module LaurentPolynomials
-export degree, valuation, Pol, derivative, shift, positive_part, negative_part,
-       bar, derivative, srgcd, Frac, @Pol, scalar, coefficients, root, randpol,
-       pseudodiv, resultant, discriminant
+export Pol, @Pol, Frac, bar, coefficients, degree, derivative, discriminant,
+ negative_part, positive_part, pseudodiv, randpol, resultant, root, scalar, 
+ shift, srgcd, valuation
 
-using LinearAlgebra:LinearAlgebra, exactdiv, det_bareiss
+using LinearAlgebra:LinearAlgebra, det_bareiss, exactdiv
 using LaTeXStrings
 varname::Symbol=:x
 
@@ -300,11 +300,7 @@ allocation by setting `copy=false` if you know the contents can be shared)
 function Pol(c::AbstractVector{T},v::Integer=0;check=true,copy=true)where T
   if check # normalize c so there are no leading or trailing zeroes
     b=findfirst(!iszero,c)
-    if b===nothing 
-      if length(c)>0 return Pol_([c[1]],0)
-      else return Pol_([T(0)],0) # try to avoid this case
-      end
-    end
+    if isnothing(b) return Pol_([length(c)>0 ? c[1] : T(0)],0) end
     e=findlast(!iszero,c)
     if b!=1 || e!=length(c) || copy return Pol_(view(c,b:e),v+b-1) end
   end
@@ -339,12 +335,12 @@ end
 Base.broadcastable(p::Pol)=Ref(p)
 Base.:*(a::AbstractArray,b::Pol)=a.*b
 Base.:*(a::Pol,b::AbstractArray)=a.*b
-Base.:*(a::Pol,b::Missing)=missing
-Base.:*(b::Missing,a::Pol)=missing
+Base.:*(::Pol,::Missing)=missing
+Base.:*(::Missing,::Pol)=missing
 
 Base.copy(p::Pol)=Pol_(copy(p.c),p.v)
 
-degree(a::Number)=0 # convenient
+degree(::Number)=0 # convenient
 degree(p::Pol)=length(p.c)-1+p.v
 valuation(p::Pol)=p.v
 coefficients(p::Pol)=p.c
@@ -362,13 +358,11 @@ Base.convert(::Type{Pol{T}},a::Number) where T=Pol_([T(a)],0)
 # like convert for vectors does not always make a copy
 Base.convert(::Type{Pol{T}},p::Pol{T1}) where {T,T1}=Pol_(Vector{T}(p.c),p.v)
 
-function Base.promote_rule(a::Type{Pol{T1}},b::Type{Pol{T2}})where {T1,T2}
+Base.promote_rule(::Type{Pol{T1}},::Type{Pol{T2}})where {T1,T2}=
   Pol{promote_type(T1,T2)}
-end
 
-function Base.promote_rule(a::Type{Pol{T1}},b::Type{T2})where {T1,T2<:Number}
+Base.promote_rule(::Type{Pol{T1}},::Type{T2})where {T1,T2<:Number}=
   Pol{promote_type(T1,T2)}
-end
 
 Base.isinteger(p::Pol)=isinteger(scalar(p))
 
@@ -420,7 +414,7 @@ Base.conj(p::Pol{T}) where T=Pol_(conj.(p.c),p.v)
 Base.abs(p::Pol)=p
 Base.adjoint(a::Pol)=conj(a)
 Base.transpose(a::Pol)=a
-Base.isfinite(a::Pol)=true
+Base.isfinite(::Pol)=true
 
 ismonomial(p::Pol)=length(p.c)==1
 
@@ -494,9 +488,8 @@ function Base.show(io::IO,p::Pol{T})where T
 end
 
 function Base.:*(a::Pol{T1},b::Pol{T2})where {T1,T2}
-  T=promote_type(T1,T2)
   if iszero(a) || iszero(b) return Pol([a.c[1]*b.c[1]]) end
-  # below not zero(T) for types T like Mod{T1} which have no zero method
+  # a.c[1] always exists. Not zero(type) since e.g. Mod{T} has no zero method
   res=fill(zero(a.c[1]*b.c[1]),length(a.c)+length(b.c)-1)
   for i in eachindex(a.c), j in eachindex(b.c)
 @inbounds res[i+j-1]+=a.c[i]*b.c[j]
@@ -620,7 +613,7 @@ function LinearAlgebra.exactdiv(a::Pol,b::Pol)
     q[i-length(b.c)+1]=c
   end
   if !iszero(r) error(b," does not exactly divide ",a) end
-  res=Pol(q,d)
+  Pol(q,d)
 end
 
 """
@@ -685,7 +678,7 @@ function srgcd(a::Pol,b::Pol)
   h=one(a.c[1])
   while true
     δ=degree(a)-degree(b)
-    q,r=pseudodiv(a,b)
+    _,r=pseudodiv(a,b)
     if iszero(r)
       cb=gcd(b.c);b=coeffexactdiv(b,cb)
       return isone(d) ? shift(b,v) : Pol_(b.c.*Ref(d),b.v+v)
@@ -897,7 +890,7 @@ end
 
 Base.numerator(a::Frac)=a.num
 Base.denominator(a::Frac)=a.den
-Base.isfinite(x::Frac)=true
+Base.isfinite(::Frac)=true
 
 root(f::Frac,n=2)=root(numerator(f),n)//root(denominator(f),n)
 
@@ -912,8 +905,8 @@ end
 Base.broadcastable(p::Frac)=Ref(p)
 Base.:*(a::AbstractArray,b::Frac)=a.*b
 Base.:*(a::Frac,b::AbstractArray)=a.*b
-Base.:*(a::Frac,b::Missing)=missing
-Base.:*(b::Missing,a::Frac)=missing
+Base.:*(::Frac,::Missing)=missing
+Base.:*(::Missing,::Frac)=missing
 
 Base.copy(a::Frac)=Frac_(a.num,a.den)
 Base.one(a::Frac)=Frac_(one(a.num),one(a.den))
@@ -1045,25 +1038,21 @@ function Base.convert(::Type{Frac{Pol{T}}},p::Pol{Rational{T1}}) where{T,T1}
   Frac_(convert(T2,numerator(p)),convert(T2,denominator(p)))
 end
 
-function Base.convert(::Type{Frac{T}},p::Number) where {T<:Pol}
+Base.convert(::Type{Frac{T}},p::Number) where {T<:Pol}=
   Frac_(convert(T,p),convert(T,1))
-end
 
-function Base.promote_rule(a::Type{Pol{T1}},b::Type{Frac{Pol{T2}}})where {T1,T2}
+Base.promote_rule(::Type{Pol{T1}},::Type{Frac{Pol{T2}}})where {T1,T2}=
   Frac{Pol{promote_type(T1,T2)}}
-end
 
-function Base.promote_rule(a::Type{Pol{Rational{T1}}},b::Type{Frac{Pol{T2}}})where {T1,T2}
+Base.promote_rule(::Type{Pol{Rational{T1}}},::Type{Frac{Pol{T2}}})where {T1,T2}=
   Frac{Pol{promote_type(T1,T2)}}
-end
 
-function Base.promote_rule(a::Type{T1},b::Type{Frac{T2}})where {T1<:Number,T2<:Pol}
+Base.promote_rule(::Type{T1},::Type{Frac{T2}})where {T1<:Number,T2<:Pol}=
   Frac{promote_type(T1,T2)}
-end
 
-function Base.promote_rule(a::Type{Frac{T1}},b::Type{Frac{T2}})where {T1<:Pol,T2<:Pol}
+Base.promote_rule(::Type{Frac{T1}},::Type{Frac{T2}})where {T1<:Pol,T2<:Pol}=
   Frac{promote_type(T1,T2)}
-end
+
 #@test (q+1)/(q-1)+q//1==(q^2+1)//(q-1)
 #@test q//1+(q+1)/(q-1)==(q^2+1)//(q-1)
 
