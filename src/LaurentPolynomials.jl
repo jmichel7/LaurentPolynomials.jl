@@ -923,12 +923,12 @@ Base.transpose(a::Frac)=a
 Base.:(==)(a::Frac{<:Pol},b::Frac{<:Pol})=a.num==b.num && a.den==b.den
 Base.:(==)(a::Frac,b::Frac)=iszero(a-b)
 function Base.:(==)(a::Frac,b)
- if applicable(numerator,b) && applicable(denominator,b)
+  if applicable(numerator,b) && applicable(denominator,b)
     a.num==numerator(b) && a.den==denominator(b)
- else false end
+  else false end
 end
 Base.cmp(a::Frac,b::Frac)=cmp((a.num,a.den),(b.num,b.den))
-Base.hash(a::Frac, h::UInt)=hash(a.num,hash(a.den,h))
+Base.hash(a::Frac, h::UInt)=hash(a.num,hash(a.den,h)) # false, see ==
 Base.isless(a::Frac,b::Frac)=cmp(a,b)==-1
 
 function Base.show(io::IO, ::MIME"text/latex", a::Frac)
