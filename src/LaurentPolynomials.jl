@@ -915,11 +915,13 @@ Base.isone(a::Frac)=a.num==a.den
 Base.zero(::Type{Frac{T}}) where T =Frac_(zero(T),one(T)) # avoid this
 Base.zero(a::Frac)=Frac_(zero(a.num),one(a.num))
 Base.iszero(a::Frac)=iszero(a.num)
-# next 3 methods are to make inv using LU work (abs is stupid)
+# next 4 methods are to make inv using LU work (abs is stupid)
 Base.abs(p::Frac)=p
 Base.conj(p::Frac)=Frac_(conj(p.num),conj(p.den))
 Base.adjoint(a::Frac)=conj(a)
-Base.:(==)(a::Frac,b::Frac)=a.num==b.num && a.den==b.den
+Base.transpose(a::Frac)=a
+Base.:(==)(a::Frac{<:Pol},b::Frac{<:Pol})=a.num==b.num && a.den==b.den
+Base.:(==)(a::Frac,b::Frac)=iszero(a-b)
 function Base.:(==)(a::Frac,b)
  if applicable(numerator,b) && applicable(denominator,b)
     a.num==numerator(b) && a.den==denominator(b)
