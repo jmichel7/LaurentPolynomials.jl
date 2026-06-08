@@ -1,7 +1,7 @@
 name = "LaurentPolynomials"
 uuid = "10b2801c-d482-41ed-a506-4a825c59e3da"
 authors = ["Jean Michel <jean.michel@imj-prg.fr>"]
-version = "0.1.8"
+version = "0.1.9"
 
 [deps]
 LaTeXStrings= "b964fa9f-0449-5b57-a5c2-d3ea65f4040f"
