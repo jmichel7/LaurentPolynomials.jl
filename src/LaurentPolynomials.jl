@@ -246,8 +246,8 @@ julia> m=[q+1 q+2;q-2 q-3]
 
 julia> n=inv(Frac.(m)) # convert to rational fractions to invert the matrix
 2×2 Matrix{Frac{Pol{Int64}}}:
- (-q+3)/(2q-1)  (-q-2)/(-2q+1)
- (q-2)/(2q-1)   (q+1)/(-2q+1)
+ (-q+3)/(2q-1)  (q+2)/(2q-1)
+ (q-2)/(2q-1)   (-q-1)/(2q-1)
 
 julia> map(x->x(1),n) # evaluate at 1 the inverse matrix
 2×2 Matrix{Float64}:
@@ -271,7 +271,7 @@ julia> repr(MIME("text/latex"),a)
 """
 module LaurentPolynomials
 export Pol, @Pol, Frac, bar, coefficients, degree, derivative, discriminant,
- negative_part, positive_part, pseudodiv, randpol, resultant, root, scalar, 
+ negative_part, positive_part, pseudodiv, randpol, resultant, root, scalar,
  shift, srgcd, valuation
 
 using LinearAlgebra:LinearAlgebra, det_bareiss, exactdiv
@@ -423,7 +423,7 @@ function Base.show(io::IO, ::MIME"text/latex", a::Pol)
 end
 
 function Base.show(io::IO, ::MIME"text/plain", a::Pol)
-  if !haskey(io,:typeinfo) 
+  if !haskey(io,:typeinfo)
     print(io,typeof(a),": ")
     io=IOContext(io,:typeinfo=>typeof(a))
   end
@@ -435,7 +435,7 @@ end
 # determines when coefficients should be bracketed for unambiguous display
 function bracket_if_needed(c::String)
   if match(r"^[-+]?([^-+*/]|√-|{-)*(\(.*\))?$",c)!==nothing c
-  else "("*c*")" 
+  else "("*c*")"
   end
 end
 
@@ -450,7 +450,7 @@ const supvec=['⁰','¹','²','³','⁴','⁵','⁶','⁷','⁸','⁹']
 
 function stringexp(io::IO,n::Integer)
   if isone(n) ""
-  elseif get(io,:TeX,false) 
+  elseif get(io,:TeX,false)
     n in 0:9 ? "^"*string(n) : "^{"*string(n)*"}"
   elseif get(io,:limit,false)
     res=Char[]
@@ -549,7 +549,7 @@ Base.:-(a::Pol,b::Number)=a-Pol(b)
 Base.div(a::Pol,b::Number)=Pol(div.(a.c,b),a.v;copy=false)
 
 # compared to LinearAlgebra.exactdiv this function gives an error if not exact
-#function exactdiv(a::Integer,b::Integer) 
+#function exactdiv(a::Integer,b::Integer)
 #  (d,r)=divrem(a,b)
 #  if !iszero(r) error(b," does not exactly divide ",a) end
 #  d
@@ -689,9 +689,9 @@ function srgcd(a::Pol,b::Pol)
     gh=g*h^δ
     b=coeffexactdiv(r,gh)
     g=a[end]
-    if δ>1 
+    if δ>1
       h=exactdiv(g^δ,h^(δ-1))
-    else 
+    else
       h=g^δ*h^(1-δ)
     end
   end
@@ -731,7 +731,7 @@ function Base.gcd(p::Pol,q::Pol)
 end
 
 """
-  `gcdx(a::Pol,b::Pol)` 
+  `gcdx(a::Pol,b::Pol)`
 
 for  polynomials  over  a  field  returns `d,u,v`  such  that `d=ua+vb` and
 `d=gcd(a,b)`.
@@ -868,7 +868,7 @@ function resultant(p::Pol,q::Pol)
 end
 
 """
-`discriminant(p::Pol)` 
+`discriminant(p::Pol)`
 
 is  the  resultant  of  the  polynomial  with  its derivative. This detects
 multiple zeroes.
@@ -936,8 +936,8 @@ function Base.show(io::IO, ::MIME"text/latex", a::Frac)
 end
 
 function Base.show(io::IO, ::MIME"text/plain", a::Frac)
-  if !haskey(io,:typeinfo) 
-    print(io,typeof(a),": ") 
+  if !haskey(io,:typeinfo)
+    print(io,typeof(a),": ")
     io=IOContext(io,:typeinfo=>typeof(a))
   end
   show(io,a)
@@ -948,9 +948,9 @@ function Base.show(io::IO,a::Frac)
     print(io,"frac(",a.num,",",a.den,")")
     return
   end
-  if haskey(io,:typeinfo) && isone(a.den) 
+  if haskey(io,:typeinfo) && isone(a.den)
     print(io,a.num)
-    return 
+    return
   end
   if get(io,:TeX,false)
     print(io,"\\displaystyle{\\frac{",a.num,"}{",a.den,"}}")
@@ -986,11 +986,11 @@ function make_positive(a::Pol,b::Pol)
   v=a.v-b.v
   shift(a,max(v,0)-a.v),shift(b,-min(v,0)-b.v)
 end
-  
+
 Frac(a::Pol,b::Pol;prime=false)=Frac(promote(a,b)...;prime)
 
 """
-`Frac(a::Pol,b::Pol;prime=false)
+`Frac(a::Pol,b::Pol;prime=false)`
 
 Makes  the  rational  fraction  with  numerator  `a`  and  denominator `b`.
 Polynomials  `a` and  `b` are  promoted to  the same  coefficient type, and
@@ -1001,15 +1001,25 @@ the  same power  of `Pol()`  so they  become true  polynomials), and unless
 julia> Frac(q^2+q,q^3-q)
 Frac{Pol{Int64}}: 1/(q-1)
 ```
+Rational   fractions  of  `Pol{<:Integer}`  are   normalized  so  that  the
+coefficients  of  `a`  and  `b`  have  no  common  divisor  and the leading
+coefficient of `b` is positive.
+
+Rational  fractions  of  `Pol{<:Rational}`  are  normalized  so that `b` is
+monic.
 """
-function Frac(a::T,b::T;prime=false)::Frac{T} where T<:Pol
+function Frac(a::Pol{T},b::Pol{T};prime=false)::Frac{Pol{T}} where T
   if iszero(b) error("division by 0") end
   a,b=make_positive(a,b)
   if !prime
     d=gcd(a,b)
     a,b=exactdiv(a,d),exactdiv(b,d)
   end
-  if scalar(b)==-1 a,b=(-a,-b) end
+  if T<:Integer && b[end]<0
+    a,b=(-a,-b)
+  elseif T<:Rational && b[end]!=1
+    a,b=(a//b[end],b//b[end])
+  end
   Frac_(a,b)
 end
 
@@ -1034,7 +1044,7 @@ function Base.convert(::Type{Frac{Pol{T}}},a::Frac{<:Pol{<:Rational{T}}}) where 
   d=denominator(a)
   Frac(numerator(n)*denominator(d),numerator(d)*denominator(n))
 end
-  
+
 function Base.convert(::Type{Frac{Pol{T}}},p::Pol{Rational{T1}}) where{T,T1}
   T2=Pol{promote_type(T,T1)}
   Frac_(convert(T2,numerator(p)),convert(T2,denominator(p)))
@@ -1096,4 +1106,5 @@ end
 # 1.9.3   27.855 μs (673 allocations: 46.39 KiB)
 # 1.10.β3 23.769 μs (568 allocations: 33.12 KiB)
 # 1.11.7  17.459 μs (813 allocations: 28.84 KiB)
+# 1.12.6  12.960 μs (790 allocations: 27.81 KiB)
 end

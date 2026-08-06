@@ -8,7 +8,8 @@ function mytest(file::String,cmd::String,man::String)
   exec=replace(exec,r"^\s*"=>"")
   if exec==man return true end
   inds=collect(eachindex(exec))
-  i=inds[findfirst(i->i<=lastindex(man) && exec[i]!=man[i],inds)]
+  i=findfirst(i->i<=lastindex(man) && exec[i]!=man[i],inds)
+  if i==nothing i=ncodeunits(man)+1 else i=inds[i] end
   print("exec=$(repr(exec[i:end]))\nmanl=$(repr(man[i:end]))\n")
   false
 end
@@ -51,7 +52,7 @@ end
 @test mytest("LaurentPolynomials.jl","numerator(a)","Pol{Int64}: 1")
 @test mytest("LaurentPolynomials.jl","denominator(a)","Pol{Int64}: q+1")
 @test mytest("LaurentPolynomials.jl","m=[q+1 q+2;q-2 q-3]","2×2 Matrix{Pol{Int64}}:\n q+1  q+2\n q-2  q-3")
-@test mytest("LaurentPolynomials.jl","n=inv(Frac.(m))","2×2 Matrix{Frac{Pol{Int64}}}:\n (-q+3)/(2q-1)  (-q-2)/(-2q+1)\n (q-2)/(2q-1)   (q+1)/(-2q+1)")
+@test mytest("LaurentPolynomials.jl","n=inv(Frac.(m))","2×2 Matrix{Frac{Pol{Int64}}}:\n (-q+3)/(2q-1)  (q+2)/(2q-1)\n (q-2)/(2q-1)   (-q-1)/(2q-1)")
 @test mytest("LaurentPolynomials.jl","map(x->x(1),n)","2×2 Matrix{Float64}:\n  2.0   3.0\n -1.0  -2.0")
 @test mytest("LaurentPolynomials.jl","map(x->x(1;Rational=true),n)","2×2 Matrix{Rational{Int64}}:\n  2   3\n -1  -2")
 @test mytest("LaurentPolynomials.jl","pseudodiv(q^2+1,2q+1)","(2q-1, 5)")
