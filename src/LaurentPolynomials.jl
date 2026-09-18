@@ -333,10 +333,6 @@ macro Pol(t)
 end
 
 Base.broadcastable(p::Pol)=Ref(p)
-Base.:*(a::AbstractArray,b::Pol)=a.*b
-Base.:*(a::Pol,b::AbstractArray)=a.*b
-Base.:*(::Pol,::Missing)=missing
-Base.:*(::Missing,::Pol)=missing
 
 Base.copy(p::Pol)=Pol_(copy(p.c),p.v)
 
@@ -497,11 +493,14 @@ function Base.:*(a::Pol{T1},b::Pol{T2})where {T1,T2}
   Pol_(res,a.v+b.v)
 end
 
-scalarmult(a::Pol,b)=Pol(a.c.*Ref(b),a.v;copy=false)
-Base.:*(a::Pol, b::Number)=scalarmult(a,b)
-Base.:*(a::Pol{T}, b::T) where T=scalarmult(a,b)
-Base.:*(b::Number, a::Pol)=scalarmult(a,b)
-Base.:*(b::T, a::Pol{T}) where T=scalarmult(a,b)
+Base.:*(a::Pol, b::Number)=Pol(a.c.*Ref(b),a.v;copy=false)
+Base.:*(a::Pol{T}, b::T) where T=Pol(a.c.*Ref(b),a.v;copy=false)
+Base.:*(b::Number, a::Pol)=Pol(Ref(b).*a.c,a.v;copy=false)
+Base.:*(b::T, a::Pol{T}) where T=Pol(Ref(b).*a.c,a.v;copy=false)
+#Base.:*(a::AbstractArray,b::Pol)=a.*b
+#Base.:*(a::Pol,b::AbstractArray)=a.*b
+Base.:*(::Pol,::Missing)=missing
+Base.:*(::Missing,::Pol)=missing
 
 Base.:^(a::Pol, n::Real)=isinteger(n) ? a^Int(n) : root(a,1//n)
 
@@ -727,7 +726,7 @@ function Base.gcd(p::Pol,q::Pol)
     q=q/q.c[end]
     (q,p)=(divrem(p,q)[2],q)
   end
-  scalarmult(p,inv(p.c[end]))
+  Pol(p.c.*Ref(inv(p.c[end])),p.v;copy=false)
 end
 
 """
