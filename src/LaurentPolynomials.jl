@@ -376,9 +376,19 @@ end
 
 Base.cmp(a::Pol,b::Pol)=cmp((!iszero(a),a.v,a.c),(!iszero(b),b.v,b.c))
 Base.isless(a::Pol,b::Pol)=cmp(a,b)==-1
-Base.hash(a::Pol, h::UInt)=hash(a.v,hash(a.c,h))
+hash(a::Pol, h::UInt)=hash(a.v,hash(a.c,h))
 
-(p::Pol{T})(x) where T=evalpoly(x,p.c)*x^p.v
+# *one(x) is the diff with Base._evalpoly which makes it work with matrices
+function _evalpoly(x, p)
+    N = length(p)
+    ex = p[end]*one(x) 
+    for i in N-1:-1:1
+      ex = muladd(x, ex, p[i]*one(x))
+    end
+    ex
+end
+
+(p::Pol{T})(x) where T=_evalpoly(x,p.c)*x^p.v
 
 """
 `shift(p::Pol,s)`
