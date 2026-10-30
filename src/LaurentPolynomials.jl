@@ -376,7 +376,8 @@ end
 
 Base.cmp(a::Pol,b::Pol)=cmp((!iszero(a),a.v,a.c),(!iszero(b),b.v,b.c))
 Base.isless(a::Pol,b::Pol)=cmp(a,b)==-1
-hash(a::Pol, h::UInt)=hash(a.v,hash(a.c,h))
+Base.hash(a::Pol, h::UInt)=degree(a)==valuation(a)==0 ? hash(a[0],h) : 
+  hash(a.v,hash(a.c,h))
 
 # *one(x) is the diff with Base._evalpoly which makes it work with matrices
 function _evalpoly(x, p)
@@ -500,7 +501,7 @@ function Base.:*(a::Pol{T1},b::Pol{T2})where {T1,T2}
   for i in eachindex(a.c), j in eachindex(b.c)
 @inbounds res[i+j-1]+=a.c[i]*b.c[j]
   end
-  Pol_(res,a.v+b.v)
+  Pol(res,a.v+b.v;copy=false)
 end
 
 Base.:*(a::Pol, b::Number)=Pol(a.c.*Ref(b),a.v;copy=false)
@@ -590,7 +591,7 @@ function Base.divrem(a::Pol, b::Pol)
   if degree(b)>degree(a) return (zero(a),a) end
   if a.v<0 || b.v<0 error("arguments should be true polynomials") end
   a,b=promote(a,b)
-  d=inv(b.c[end])
+  d=b.c[end] isa Integer ? 1//b.c[end] : inv(b.c[end])
   z=zero(a.c[1]+b.c[1]+d)
   r=fill(z,1+degree(a))
   view(r,a.v+1:length(r)).=a.c
@@ -646,7 +647,9 @@ function pseudodiv(a::Pol, b::Pol)
   if isone(b) || iszero(a) return a,zero(a) end
   if iszero(b) throw(DivideError) end
   d=b.c[end]
-  if degree(a)<degree(b) return (zero(a),d^(degree(a)+1-degree(b))*a) end
+  if degree(a)<degree(b) 
+    return (zero(a),d^(max(0,degree(a)+1-degree(b)))*a)
+  end
   if a.v<0 || b.v<0 error("arguments should be true polynomials") end
   z=zero(a.c[1]+b.c[1])
   r=fill(z,1+degree(a))
@@ -879,14 +882,15 @@ end
 """
 `discriminant(p::Pol)`
 
-is  the  resultant  of  the  polynomial  with  its derivative. This detects
-multiple zeroes.
+is up to a factor the resultant of the polynomial with its derivative. This
+detects multiple zeroes.
 ```julia-repl
 julia> discriminant(q^3+q+1)
 31
 ```
 """
-discriminant(p::Pol)=resultant(p,derivative(p))
+discriminant(p::Pol)=(-1)^binomial(degree(p),2)*resultant(p,derivative(p))*
+  1//p[end]
 
 #---------------------- Frac-------------------------------------
 ## cannot use Rational{T} since it forces T<:Integer
