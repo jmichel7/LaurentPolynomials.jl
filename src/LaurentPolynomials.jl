@@ -183,9 +183,6 @@ exact, otherwise gives an error.
 
 ```julia-repl
 julia> divrem(q^3+1,2q+1) # changes coefficients to field elements
-(0.5q²-0.25q+0.125, 0.875)
-
-julia> divrem(q^3+1,2q+1//1) # case of coefficients already field elements
 ((1//2)q²+(-1//4)q+1//8, 7//8)
 
 julia> pseudodiv(q^3+1,2q+1) # pseudo-division keeps the ring
@@ -378,6 +375,7 @@ Base.cmp(a::Pol,b::Pol)=cmp((!iszero(a),a.v,a.c),(!iszero(b),b.v,b.c))
 Base.isless(a::Pol,b::Pol)=cmp(a,b)==-1
 Base.hash(a::Pol, h::UInt)=degree(a)==valuation(a)==0 ? hash(a[0],h) : 
   hash(a.v,hash(a.c,h))
+#@test Dict(Pol([1,2])=>:a)[Pol([1,2])]==:a
 
 # *one(x) is the diff with Base._evalpoly which makes it work with matrices
 function _evalpoly(x, p)
@@ -395,7 +393,7 @@ end
 `shift(p::Pol,s)`
 is an efficient way to multiply `p` by `Pol()^s`.
 """
-shift(p::Pol{T},s) where T=Pol_(p.c,p.v+s)
+shift(p::Pol{T},s::Integer) where T=Pol_(p.c,p.v+s)
 
 "`positive_part(p::Pol)` keep the terms of degree≥0"
 positive_part(p::Pol)=p.v>=0 ? copy(p) : Pol(view(p.c,1-p.v:length(p.c)),0)
@@ -503,6 +501,7 @@ function Base.:*(a::Pol{T1},b::Pol{T2})where {T1,T2}
   end
   Pol(res,a.v+b.v;copy=false)
 end
+#@test degree(Pol([[0 1;0 0],[0 0;1 0]])^2)==1
 
 Base.:*(a::Pol, b::Number)=Pol(a.c.*Ref(b),a.v;copy=false)
 Base.:*(a::Pol{T}, b::T) where T=Pol(a.c.*Ref(b),a.v;copy=false)
@@ -513,7 +512,7 @@ Base.:*(b::T, a::Pol{T}) where T=Pol(Ref(b).*a.c,a.v;copy=false)
 Base.:*(::Pol,::Missing)=missing
 Base.:*(::Missing,::Pol)=missing
 
-Base.:^(a::Pol, n::Real)=isinteger(n) ? a^Int(n) : root(a,1//n)
+Base.:^(a::Pol, n::Real)=isinteger(n) ? a^Int(n) : root(a,inv(n))
 
 Base.:^(a::Pol, n::Integer)=ismonomial(a) ? Pol_([a.c[1]^n],n*a.v) :
          n>=0 ? Base.power_by_squaring(a,n) :
@@ -591,7 +590,7 @@ function Base.divrem(a::Pol, b::Pol)
   if degree(b)>degree(a) return (zero(a),a) end
   if a.v<0 || b.v<0 error("arguments should be true polynomials") end
   a,b=promote(a,b)
-  d=b.c[end] isa Integer ? 1//b.c[end] : inv(b.c[end])
+  d=bestinv(b.c[end])
   z=zero(a.c[1]+b.c[1]+d)
   r=fill(z,1+degree(a))
   view(r,a.v+1:length(r)).=a.c
@@ -666,6 +665,7 @@ function pseudodiv(a::Pol, b::Pol)
   end
   Pol(q),Pol(r)
 end
+#@test  pseudodiv(Pol(3),Pol([1,0,2]))==(Pol(0),Pol(3))
 
 """
 `srgcd(a::Pol,b::Pol)`
@@ -768,6 +768,7 @@ function Base.gcdx(a::Pol, b::Pol)
   end
   (x, s0, t0)./Ref(x[end])
 end
+#@test gcdx(Pol([-3,-2,1,3]), Pol([-1,4,-1]))==(Pol([1]), Pol([-172//543, 47//543]), Pol([-9//181, 95//543, 47//181]))
 
 """
 `powermod(p::Pol, x::Integer, q::Pol)` computes ``p^x \\pmod m``.
@@ -831,6 +832,9 @@ Pol{Float64}: 1.0q²+1.0q+1.0
 ```
 """
 function Pol(pts::AbstractVector,vals::AbstractVector)
+  if length(pts)!=length(vals)
+    error("interpolation points and values must have same length")
+  end
   vals=collect(vals)
   a=map(eachindex(pts))do i
     for k in i-1:-1:1
@@ -841,7 +845,7 @@ function Pol(pts::AbstractVector,vals::AbstractVector)
   end
   p=Pol_([a[end]],0)
   for i in length(pts)-1:-1:1
-    p=p*(Pol()-pts[i])+a[i]
+    p=p*Pol_([-pts[i],1],0)+a[i]
   end
   p
 end
@@ -856,8 +860,16 @@ function root(x::Pol,n::Union{Integer,Rational{<:Integer}}=2)
   c=x.c[1]
   Pol_([isone(c) ? c : root(c,n)],div(x.v,n))
 end
+#@test root(4Pol()^2)==Pol([2],1)
 
 root(x::AbstractFloat,n=2)=x^(1/n)
+
+function root(a::Integer,n=2)
+  if n!=2 error("root($a,$n) not implemented") end
+  r=isqrt(a)
+  if r^2==a return r end
+  error("root($a,$n) not implemented")
+end
 
 """
 `resultant(p::Pol,q::Pol)`
@@ -886,11 +898,14 @@ is up to a factor the resultant of the polynomial with its derivative. This
 detects multiple zeroes.
 ```julia-repl
 julia> discriminant(q^3+q+1)
-31
+-31
 ```
 """
 discriminant(p::Pol)=(-1)^binomial(degree(p),2)*resultant(p,derivative(p))*
   1//p[end]
+
+discriminant(p::Pol{<:Integer})=exactdiv((-1)^binomial(degree(p),2)*resultant(p,derivative(p)),p[end])
+#@test discriminant(Pol([1,0,1]))==-4
 
 #---------------------- Frac-------------------------------------
 ## cannot use Rational{T} since it forces T<:Integer
@@ -933,7 +948,14 @@ Base.abs(p::Frac)=p
 Base.conj(p::Frac)=Frac_(conj(p.num),conj(p.den))
 Base.adjoint(a::Frac)=conj(a)
 Base.transpose(a::Frac)=a
-Base.:(==)(a::Frac{<:Pol},b::Frac{<:Pol})=a.num==b.num && a.den==b.den
+Base.:(==)(a::Frac{<:Pol{<:Integer}},b::Frac{<:Pol{<:Integer}})=a.num==b.num && a.den==b.den
+Base.:(==)(a::Frac{<:Pol{<:Rational{<:Integer}}},b::Frac{<:Pol{<:Rational{<:Integer}}})=a.num==b.num && a.den==b.den
+function Base.:(==)(a::Frac{<:Pol},b::Frac{<:Pol})
+  a1=a.num;a2=a.den;b1=b.num;b2=b.den
+  if !isone(a2[end]) a1*=1//a2[end];a2*=1//a2[end] end
+  if !isone(b2[end]) b1*=1//b2[end];b2*=1//b2[end] end
+  a1==b1 && a2==b2
+end
 Base.:(==)(a::Frac,b::Frac)=iszero(a-b)
 function Base.:(==)(a::Frac,b)
   if applicable(numerator,b) && applicable(denominator,b)
@@ -941,7 +963,11 @@ function Base.:(==)(a::Frac,b)
   else false end
 end
 Base.cmp(a::Frac,b::Frac)=cmp((a.num,a.den),(b.num,b.den))
-Base.hash(a::Frac, h::UInt)=hash(a.num,hash(a.den,h)) # false, see ==
+function Base.hash(a::Frac, h::UInt) # valid only for Frac{<:Pol}
+  a1=a.num;a2=a.den
+  if !isone(a2[end]) a1*=1//a2[end];a2*=1//a2[end] end
+  hash(a1,hash(a2,h))
+end
 Base.isless(a::Frac,b::Frac)=cmp(a,b)==-1
 
 function Base.show(io::IO, ::MIME"text/latex", a::Frac)
@@ -989,7 +1015,7 @@ Base.:-(b::Union{Number,T},a::Frac{<:T}) where T=-(promote(b,a)...)
 Base.:*(a::Frac,b::Frac)=Frac(a.num*b.num,a.den*b.den)
 Base.:*(a::Frac{<:Pol},b::Pol)=Frac(a.num*b,a.den)
 Base.:*(b::Pol,a::Frac{<:Pol})=Frac(a.num*b,a.den)
-Base.:*(a::Frac{<:Pol},b::Number)=Frac(a.num*b,a.den;prime=true)
+Base.:*(a::Frac{<:Pol},b::Number)=Frac(a.num*b,a.den)
 Base.:*(b::Number,a::Frac{<:Pol})=a*b
 
 #----------------------------------------------------------------------
@@ -1080,21 +1106,25 @@ Base.promote_rule(::Type{Frac{T1}},::Type{Frac{T2}})where {T1<:Pol,T2<:Pol}=
 
 #@test (q+1)/(q-1)+q//1==(q^2+1)//(q-1)
 #@test q//1+(q+1)/(q-1)==(q^2+1)//(q-1)
+#@test 2/(2q+2)==1/(q+1)
+#@test inv(-q-1)==-1/(q+1)
+#@test 2*(1/(2q+2))==1/(q+1)
 
 function Frac(a::Pol)
   if a.v>0 return Frac_(a,one(a)) end
   Frac(a,one(a);prime=true)
 end
 
-bestinv(x)=isone(x) ? x : isone(-x) ? x : inv(x)
+bestinv(x)=isone(x) ? x : isone(-x) ? x : inv(x*1//1)
 
 function Base.inv(p::Pol)
+  if iszero(p) error("division by 0") end
   if ismonomial(p) return Pol_([bestinv(p.c[1])],-p.v) end
-  Frac_(make_positive(one(p),p)...)
+  Frac(make_positive(one(p),p)...)
 end
 
-
 function Base.:/(a::Pol,b::Pol)
+  if iszero(b) error("division by 0") end
   if ismonomial(b) return Pol_(a.c*bestinv(b.c[1]),a.v-b.v) end
   Frac(a,b)
 end
@@ -1110,11 +1140,16 @@ Base.://(p::Number,q::Pol)=Frac(Pol(p),q;prime=true)
 Base.://(a::Frac,b::Frac)=Frac(a.num*b.den,a.den*b.num)
 
 function Base.://(a::Pol,b::Pol)
+  if iszero(b) error("division by 0") end
   if ismonomial(b) return Pol(a.c.//Ref(b.c[1]),a.v-b.v) end
   Frac(a,b)
 end
 
-(p::Frac{<:Pol})(x;Rational=false)=Rational ? p.num(x)//p.den(x) : p.num(x)/p.den(x)
+function (p::Frac{<:Pol})(x;Rational=false)
+  d=p.den(x)
+  if iszero(d) error("division by 0") end
+  Rational ? p.num(x)//d : p.num(x)/d
+end
 # @btime inv(Frac.([q+1 q+2;q-2 q-3])) setup=(q=Pol())
 # 1.9.3   27.855 μs (673 allocations: 46.39 KiB)
 # 1.10.β3 23.769 μs (568 allocations: 33.12 KiB)
