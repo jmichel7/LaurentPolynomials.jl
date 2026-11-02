@@ -564,9 +564,18 @@ Base.div(a::Pol,b::Number)=Pol(div.(a.c,b),a.v;copy=false)
 #  d
 #end
 
-function coeffexactdiv(a::Pol,b)
+function coeffexactdiv(a::Pol{T},b) where T
   if isone(b) return a end
-  c=exactdiv.(a.c,b)
+  if T<:Integer
+    c=map(a.c)do x # cannot use LinearAlgebra.exactdiv since does not error
+      u,v=divrem(x,b)
+      if !iszero(v) 
+        error("$b does not divide exactly $x. Perhap integer overflow?")
+      end
+      u
+    end
+  else c=exactdiv.(a.c,b)
+  end
   Pol_(c,a.v)
 end
 LinearAlgebra.exactdiv(a::Pol,b::Number)=coeffexactdiv(a,b)
@@ -1153,9 +1162,8 @@ function (p::Frac{<:Pol})(x;Rational=false)
 end
 # @btime inv(Frac.([q+1 q+2;q-2 q-3])) setup=(q=Pol())
 # 1.9.3   27.855 μs (673 allocations: 46.39 KiB)
-# 1.10.β3 23.769 μs (568 allocations: 33.12 KiB)
+# 1.10.13 19.299 μs (464 allocations: 30.78 KiB)
 # 1.11.7  17.459 μs (813 allocations: 28.84 KiB)
 # 1.12.6  12.960 μs (790 allocations: 27.81 KiB)
-# ******* bug ************ pols below have 2q-1 as common factor but gcd==1
-# Pol([-1, -1, 1, 8, 4, 2, -4],2)Pol([-2, 6, -4, -3, 8, -3, -2])
+# 1.13.3  12.011 μs (794 allocations: 27.92 KiB)
 end
