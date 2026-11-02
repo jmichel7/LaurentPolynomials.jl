@@ -566,7 +566,7 @@ Base.div(a::Pol,b::Number)=Pol(div.(a.c,b),a.v;copy=false)
 
 function coeffexactdiv(a::Pol{T},b) where T
   if isone(b) return a end
-  if T<:Integer
+  if T<:Integer && b isa Integer
     c=map(a.c)do x # cannot use LinearAlgebra.exactdiv since does not error
       u,v=divrem(x,b)
       if !iszero(v) 
