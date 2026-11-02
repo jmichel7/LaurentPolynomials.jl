@@ -1022,6 +1022,7 @@ Base.:*(b::Number,a::Frac{<:Pol})=a*b
 
 # make both non-Laurent pols, one of valuation 0
 function make_positive(a::Pol,b::Pol)
+  if iszero(a) return (a,one(b)) end
   v=a.v-b.v
   shift(a,max(v,0)-a.v),shift(b,-min(v,0)-b.v)
 end
@@ -1155,4 +1156,6 @@ end
 # 1.10.β3 23.769 μs (568 allocations: 33.12 KiB)
 # 1.11.7  17.459 μs (813 allocations: 28.84 KiB)
 # 1.12.6  12.960 μs (790 allocations: 27.81 KiB)
+# ******* bug ************ pols below have 2q-1 as common factor but gcd==1
+# Pol([-1, -1, 1, 8, 4, 2, -4],2)Pol([-2, 6, -4, -3, 8, -3, -2])
 end
